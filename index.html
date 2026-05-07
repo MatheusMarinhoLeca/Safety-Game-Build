@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en-us">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+  <title>Unity WebGL Player | Safety Simulator</title>
+  <link rel="shortcut icon" href="TemplateData/favicon.ico">
+  <link rel="stylesheet" href="TemplateData/style.css">
+  <script>
+   window.unityBackendUrl = "https://safety-game-backend-jrkle.ondigitalocean.app";
+  </script>
+</head>
+<body>
+  <div id="unity-container" class="unity-desktop">
+    <canvas id="unity-canvas" width=1280 height=720 tabindex="-1"></canvas>
+    <div id="unity-loading-bar">
+      <div id="unity-logo"></div>
+      <div id="unity-progress-bar-empty">
+        <div id="unity-progress-bar-full"></div>
+      </div>
+    </div>
+    <div id="unity-warning"> </div>
+    <div id="unity-footer">
+      <div id="unity-webgl-logo"></div>
+      <div id="unity-fullscreen-button"></div>
+      <div id="unity-build-title">Safety Simulator</div>
+    </div>
+  </div>
+  <script>
+
+    var container = document.querySelector("#unity-container");
+    var canvas = document.querySelector("#unity-canvas");
+    var loadingBar = document.querySelector("#unity-loading-bar");
+    var progressBarFull = document.querySelector("#unity-progress-bar-full");
+    var fullscreenButton = document.querySelector("#unity-fullscreen-button");
+    var warningBanner = document.querySelector("#unity-warning");
+
+
+
+
+    function unityShowBanner(msg, type) {
+      function updateBannerVisibility() {
+        warningBanner.style.display = warningBanner.children.length ? 'block' : 'none';
+      }
+      var div = document.createElement('div');
+      div.innerHTML = msg;
+      warningBanner.appendChild(div);
+      if (type == 'error') div.style = 'background: red; padding: 10px;';
+      else {
+        if (type == 'warning') div.style = 'background: yellow; padding: 10px;';
+        setTimeout(function() {
+          warningBanner.removeChild(div);
+          updateBannerVisibility();
+        }, 5000);
+      }
+      updateBannerVisibility();
+    }
+
+
+
+
+    var buildUrl = "Build";
+
+
+
+
+    async function loadUnity() {
+      // Download both parts and merge them into one Blob
+      const parts = [
+        buildUrl + "/new version.data.part.unitywebaa",
+        buildUrl + "/new version.data.part.unitywebab"
+      ];
+
+
+
+
+      var totalLoaded = 0;
+      var totalSize = 0;
+
+
+
+
+      // Fetch all parts
+      const responses = await Promise.all(parts.map(url => fetch(url)));
+
+
+
+
+      // Check for errors
+      for (var i = 0; i < responses.length; i++) {
+        if (!responses[i].ok) {
+          unityShowBanner("Failed to load data part: " + parts[i], "error");
+          return;
+        }
+      }
+
+
+
+
+      // Read all as ArrayBuffers
+      const buffers = await Promise.all(responses.map(r => r.arrayBuffer()));
+
+
+
+
+      // Merge into a single Uint8Array
+      const totalLength = buffers.reduce((sum, b) => sum + b.byteLength, 0);
+      const merged = new Uint8Array(totalLength);
+      let offset = 0;
+      for (const buf of buffers) {
+        merged.set(new Uint8Array(buf), offset);
+        offset += buf.byteLength;
+      }
+
+
+
+
+      // Create a blob URL for the merged data
+      const dataBlob = new Blob([merged], { type: "application/octet-stream" });
+      const dataUrl = URL.createObjectURL(dataBlob);
+
+
+
+
+      var config = {
+        dataUrl: dataUrl,
+        frameworkUrl: buildUrl + "/new version.framework.js.unityweb",
+        codeUrl: buildUrl + "/new version.wasm.unityweb",
+        streamingAssetsUrl: "StreamingAssets",
+        companyName: "DefaultCompany",
+        productName: "Safety Simulator",
+        productVersion: "0.2",
+        showBanner: unityShowBanner,
+      };
+
+
+
+
+      if (/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
+        var meta = document.createElement('meta');
+        meta.name = 'viewport';
+        meta.content = 'width=device-width, height=device-height, initial-scale=1.0, user-scalable=no, shrink-to-fit=yes';
+        document.getElementsByTagName('head')[0].appendChild(meta);
+        container.className = "unity-mobile";
+        canvas.className = "unity-mobile";
+      } else {
+        canvas.style.width = "1280px";
+        canvas.style.height = "720px";
+      }
+
+
+
+
+      loadingBar.style.display = "block";
+
+
+
+
+      var script = document.createElement("script");
+      script.src = buildUrl + "/new version.loader.js";
+      script.onload = () => {
+        createUnityInstance(canvas, config, (progress) => {
+          progressBarFull.style.width = 100 * progress + "%";
+        }).then((unityInstance) => {
+          loadingBar.style.display = "none";
+          // Free the blob URL after Unity has loaded
+          URL.revokeObjectURL(dataUrl);
+          fullscreenButton.onclick = () => {
+            unityInstance.SetFullscreen(1);
+          };
+        }).catch((message) => {
+          alert(message);
+        });
+      };
+
+
+
+
+      document.body.appendChild(script);
+    }
+
+
+
+
+    loadUnity();
+
+
+
+
+  </script>
+</body>
+</html>
+
+
+
+
