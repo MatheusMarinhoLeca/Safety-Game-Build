@@ -186,17 +186,14 @@
       warningBanner.appendChild(div);
   
       if (type == "error") {
-        div.style =
-          "background: red; padding: 10px; color: white;";
+        div.style = "background: red; padding: 10px; color: white;";
       } else {
         if (type == "warning") {
           div.style = "background: yellow; padding: 10px;";
         }
   
         setTimeout(function () {
-          if (div.parentNode) {
-            warningBanner.removeChild(div);
-          }
+          if (div.parentNode) warningBanner.removeChild(div);
           updateBannerVisibility();
         }, 5000);
       }
@@ -212,42 +209,27 @@
         buildUrl + "/new version.data.part.unitywebab"
       ];
   
-      const responses = await Promise.all(
-        parts.map((url) => fetch(url))
-      );
+      const responses = await Promise.all(parts.map((url) => fetch(url)));
   
       for (var i = 0; i < responses.length; i++) {
         if (!responses[i].ok) {
-          unityShowBanner(
-            "Failed to load data part: " + parts[i],
-            "error"
-          );
+          unityShowBanner("Failed to load data part: " + parts[i], "error");
           return;
         }
       }
   
-      const buffers = await Promise.all(
-        responses.map((r) => r.arrayBuffer())
-      );
+      const buffers = await Promise.all(responses.map((r) => r.arrayBuffer()));
   
-      const totalLength = buffers.reduce(
-        (sum, b) => sum + b.byteLength,
-        0
-      );
-  
+      const totalLength = buffers.reduce((sum, b) => sum + b.byteLength, 0);
       const merged = new Uint8Array(totalLength);
   
       let offset = 0;
-  
       for (const buf of buffers) {
         merged.set(new Uint8Array(buf), offset);
         offset += buf.byteLength;
       }
   
-      const dataBlob = new Blob([merged], {
-        type: "application/octet-stream"
-      });
-  
+      const dataBlob = new Blob([merged], { type: "application/octet-stream" });
       const dataUrl = URL.createObjectURL(dataBlob);
   
       var config = {
@@ -263,13 +245,13 @@
   
       const isIOS =
         /iPhone|iPad|iPod/.test(navigator.userAgent) ||
-        (navigator.platform === "MacIntel" &&
-          navigator.maxTouchPoints > 1);
+        (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
   
       const isAndroid = /Android/i.test(navigator.userAgent);
       const isMobile = isIOS || isAndroid;
   
       let safariActive = false;
+      let measureRef = null;
   
       if (isMobile) {
         var meta = document.createElement("meta");
@@ -284,8 +266,6 @@
   
         canvas.style.width = "100%";
         canvas.style.height = "100%";
-  
-        container.style.overflow = "hidden";
   
         if (isIOS) {
           const overlay = document.querySelector(".overlay");
@@ -303,12 +283,11 @@
           setTimeout(nudge, 500);
   
           function measure() {
+            // 🚨 HARD STOP AFTER UNITY STARTS
             if (!safariActive) return;
             if (window.unityInstanceStarted) return;
   
-            if (rafId !== null) {
-              cancelAnimationFrame(rafId);
-            }
+            if (rafId !== null) cancelAnimationFrame(rafId);
   
             rafId = requestAnimationFrame(() => {
               document.documentElement.style.setProperty(
@@ -335,8 +314,9 @@
               tabsOpen = open;
   
               window.setTimeout(() => {
-                const shouldLock =
-                  safariActive && !open && isIOS;
+                if (!safariActive) return;
+  
+                const shouldLock = !open && isIOS;
   
                 document.documentElement.classList.toggle(
                   "is-locked",
@@ -362,6 +342,7 @@
             });
           }
   
+          measureRef = measure;
           measure();
   
           window.addEventListener("resize", measure, { passive: true });
@@ -389,9 +370,12 @@
   
           window.unityInstanceStarted = true;
   
-          // shutdown safari system
+          // 🔥 FULL CLEANUP (THIS IS THE IMPORTANT FIX)
           safariActive = false;
           document.documentElement.classList.remove("is-locked");
+          document.body.style.overflow = "auto";
+  
+          if (measureRef) measureRef = null;
   
           createUnityInstance(canvas, config, (progress) => {
             progressBarFull.style.width = 100 * progress + "%";
