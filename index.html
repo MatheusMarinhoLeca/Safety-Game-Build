@@ -13,15 +13,15 @@
 
 
   html, body {
-    height: 100%;
+    min-height: 100%;
     width: 100%;
     margin: 0;
     padding: 0;
     background-color: #232323;
-    overflow: hidden;
     font-family: system-ui, sans-serif;
+    /* Base overflow must be auto/visible for Safari to allow UI collapsing */
+    overflow: auto;
   }
-
 
   html.is-locked,
   html.is-locked body {
