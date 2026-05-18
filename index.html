@@ -97,6 +97,53 @@
       transition: opacity 0.3s ease;
     }
 
+    .preloader-overlay {
+      position: fixed;
+      inset: 0;
+      background: #1a1a1a;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 3000;
+      color: white;
+      text-align: center;
+      padding: 20px;
+      transition: opacity 0.5s ease, visibility 0.5s;
+    }
+
+    .preloader-overlay.is-hidden {
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+    }
+
+    .ready-button {
+      margin-top: 30px;
+      padding: 16px 48px;
+      font-size: 20px;
+      font-weight: bold;
+      color: white;
+      background: #4CAF50;
+      border: none;
+      border-radius: 50px;
+      cursor: pointer;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+      transition: transform 0.2s, background 0.2s;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .ready-button:active {
+      transform: scale(0.95);
+      background: #45a049;
+    }
+
+    .preloader-message {
+      max-width: 300px;
+      line-height: 1.5;
+      font-size: 16px;
+    }
+
     .overlay {
       position: fixed;
       inset: 0;
@@ -159,6 +206,15 @@
 </head>
 
 <body>
+  <div class="preloader-overlay">
+    <div id="preloader-logo"></div>
+    <div class="preloader-message">
+      <h2>Welcome</h2>
+      <p>Scroll down a bit to hide the browser bars and enjoy the full screen experience.</p>
+    </div>
+    <button class="ready-button" onclick="onReadyClicked()">READY</button>
+  </div>
+
   <div id="unity-container" class="unity-desktop fullscreen-game">
     <canvas id="unity-canvas" width=1280 height=720 tabindex="-1"></canvas>
     <div id="unity-loading-bar">
@@ -252,8 +308,9 @@
   
       const dataBlob = new Blob([merged], { type: "application/octet-stream" });
       const dataUrl = URL.createObjectURL(dataBlob);
+      window.unityDataUrl = dataUrl;
   
-      var config = {
+      window.unityConfig = {
         dataUrl: dataUrl,
         frameworkUrl: buildUrl + "/new version.framework.js.unityweb",
         codeUrl: buildUrl + "/new version.wasm.unityweb",
@@ -420,42 +477,46 @@
       script.src = buildUrl + "/new version.loader.js";
   
       script.onload = () => {
-        const startUnity = () => {
-          if (window.unityInstanceStarted) return;
-  
-          window.unityInstanceStarted = true;
-  
-          createUnityInstance(canvas, config, (progress) => {
-            progressBarFull.style.width = 100 * progress + "%";
-          })
-            .then((unityInstance) => {
-              loadingBar.style.display = "none";
-              URL.revokeObjectURL(dataUrl);
-  
-              fullscreenButton.onclick = () => {
-                unityInstance.SetFullscreen(1);
-              };
-            })
-            .catch((message) => {
-              alert(message);
-            });
-        };
-  
-        const isCurrentlyWindowed =
-          isIOS &&
-          window.visualViewport &&
-          window.visualViewport.height <
-            Math.min(window.screen.width, window.screen.height) - 20;
-  
-        if (isCurrentlyWindowed) {
-          window.addEventListener("safariBarsHidden", startUnity, { once: true });
-          setTimeout(startUnity, 8000);
-        } else {
-          startUnity();
-        }
+        window.unityLoaderReady = true;
+        // Check if user already clicked ready while loader was fetching
+        if (window.userReady) startUnity();
       };
   
       document.body.appendChild(script);
+    }
+    
+    function startUnity() {
+      if (window.unityInstanceStarted) return;
+      window.unityInstanceStarted = true;
+
+      document.querySelector(".preloader-overlay").classList.add("is-hidden");
+      
+      const canvas = document.querySelector("#unity-canvas");
+      // Use the config defined in loadUnity (which we'll need to make accessible)
+      createUnityInstance(canvas, window.unityConfig, (progress) => {
+        document.querySelector("#unity-progress-bar-full").style.width = 100 * progress + "%";
+      })
+        .then((unityInstance) => {
+          document.querySelector("#unity-loading-bar").style.display = "none";
+          URL.revokeObjectURL(window.unityDataUrl);
+
+          document.querySelector("#unity-fullscreen-button").onclick = () => {
+            unityInstance.SetFullscreen(1);
+          };
+        })
+        .catch((message) => {
+          alert(message);
+        });
+    }
+
+    function onReadyClicked() {
+      window.userReady = true;
+      if (window.unityLoaderReady) {
+        startUnity();
+      } else {
+        // Show a "Loading..." state on the button if script isn't ready
+        document.querySelector(".ready-button").innerText = "LOADING...";
+      }
     }
   
     loadUnity();
