@@ -1,262 +1,310 @@
 <!DOCTYPE html>
 <html lang="en-us">
 <head>
- <meta charset="utf-8">
- <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
- <title>Unity WebGL Player | Safety Simulator</title>
- <link rel="shortcut icon" href="TemplateData/favicon.ico">
- <link rel="stylesheet" href="TemplateData/style.css">
- <script>
-  window.unityBackendUrl = "https://safety-game-backend-jrkle.ondigitalocean.app";
- </script>
+<meta charset="utf-8">
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<title>Unity WebGL Player | Safety Simulator</title>
+<link rel="shortcut icon" href="TemplateData/favicon.ico">
+<link rel="stylesheet" href="TemplateData/style.css">
+<style>
+  :root {
+    --isl-vh: 1%;
+  }
+
+
+  html, body {
+    height: 100%;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    background-color: #232323;
+    overflow: hidden;
+    font-family: system-ui, sans-serif;
+  }
+
+
+  html.is-locked,
+  html.is-locked body {
+    overflow: hidden;
+    position: relative;
+    height: 100dvh;
+    overscroll-behavior: none;
+  }
+
+
+  /* Desktop Centering Fix: Prevents black screen on macOS */
+  #unity-container.unity-desktop {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+
+
+  #unity-container.unity-mobile {
+    position: fixed;
+    width: 100%;
+    height: 100%;
+  }
+
+
+  canvas.unity-mobile {
+    width: 100% !important;
+    height: 100% !important;
+  }
+
+
+  /* Safari Hider Elements */
+  .safari-hider-holder {
+    position: fixed;
+    left: 0; top: 0; width: 100%; height: min(calc(var(--isl-vh) * 100), 100%);
+    overflow: hidden; z-index: 2147483646; display: none;
+  }
+  html.is-locked .safari-hider-holder { display: block; }
+  .safari-scroller {
+    display: block; width: 100%; height: 100%; overflow-x: hidden; overflow-y: auto;
+    overscroll-behavior: none; scrollbar-width: none; -webkit-overflow-scrolling: touch;
+  }
+  .safari-scroller-inner {
+    display: flex; flex-direction: column;
+    height: calc(100% + 1px); min-height: calc(100% + 1px);
+  }
+  .safari-content {
+    display: flex; flex-direction: column; position: sticky;
+    width: 100%; height: calc(100% - 1px); top: 0; bottom: 0;
+  }
+  .safari-overlay {
+    position: fixed; inset: 0; display: none; align-items: flex-start; justify-content: center;
+    padding: 12px env(safe-area-inset-right) 0 env(safe-area-inset-left); z-index: 2147483647; pointer-events: none;
+  }
+  .safari-overlay.is-visible { display: flex; }
+  .safari-bubble {
+    max-width: 80vw; backdrop-filter: blur(8px); background: rgba(0, 0, 0, 0.6); color: #fff;
+    border-radius: 96px; padding: 12px 20px; font-size: 14px; pointer-events: auto; text-align: center;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+  }
+  .safari-spacer { display: none; width: 1px; height: 2000vh; }
+  .safari-spacer.is-visible { display: block; }
+</style>
+<script>
+    window.unityBackendUrl ="https://safety-game-backend-jrkle.ondigitalocean.app";
+
+
+</script>
 </head>
+
+
 <body>
- <div id="unity-container" class="unity-desktop">
-   <canvas id="unity-canvas" width=1280 height=720 tabindex="-1"></canvas>
-   <div id="unity-loading-bar">
-     <div id="unity-logo"></div>
-     <div id="unity-progress-bar-empty">
-       <div id="unity-progress-bar-full"></div>
-     </div>
-   </div>
-   <div id="unity-warning"> </div>
-   <div id="unity-footer">
-     <div id="unity-webgl-logo"></div>
-     <div id="unity-fullscreen-button"></div>
-     <div id="unity-build-title">Safety Simulator</div>
-   </div>
- </div>
- <script>
-
-
-
-
-
-
-
-   var container = document.querySelector("#unity-container");
-   var canvas = document.querySelector("#unity-canvas");
-   var loadingBar = document.querySelector("#unity-loading-bar");
-   var progressBarFull = document.querySelector("#unity-progress-bar-full");
-   var fullscreenButton = document.querySelector("#unity-fullscreen-button");
-   var warningBanner = document.querySelector("#unity-warning");
-
-
-
-
-
-
-
-
-   function unityShowBanner(msg, type) {
-     function updateBannerVisibility() {
-       warningBanner.style.display = warningBanner.children.length ? 'block' : 'none';
-     }
-     var div = document.createElement('div');
-     div.innerHTML = msg;
-     warningBanner.appendChild(div);
-     if (type == 'error') div.style = 'background: red; padding: 10px;';
-     else {
-       if (type == 'warning') div.style = 'background: yellow; padding: 10px;';
-       setTimeout(function() {
-         warningBanner.removeChild(div);
-         updateBannerVisibility();
-       }, 5000);
-     }
-     updateBannerVisibility();
-   }
-
-
-
-
-
-
-
-
-   var buildUrl = "Build";
-
-
-
-
-
-
-
-
-   async function loadUnity() {
-     // Download both parts and merge them into one Blob
-     const parts = [
-       buildUrl + "/new version.data.part.unitywebaa",
-       buildUrl + "/new version.data.part.unitywebab"
-     ];
-
-
-
-
-
-
-
-
-     var totalLoaded = 0;
-     var totalSize = 0;
-
-
-
-
-
-
-
-
-     // Fetch all parts
-     const responses = await Promise.all(parts.map(url => fetch(url)));
-
-
-
-
-
-
-
-
-     // Check for errors
-     for (var i = 0; i < responses.length; i++) {
-       if (!responses[i].ok) {
-         unityShowBanner("Failed to load data part: " + parts[i], "error");
-         return;
-       }
-     }
-
-
-
-
-
-
-
-
-     // Read all as ArrayBuffers
-     const buffers = await Promise.all(responses.map(r => r.arrayBuffer()));
-
-
-
-
-
-
-
-
-     // Merge into a single Uint8Array
-     const totalLength = buffers.reduce((sum, b) => sum + b.byteLength, 0);
-     const merged = new Uint8Array(totalLength);
-     let offset = 0;
-     for (const buf of buffers) {
-       merged.set(new Uint8Array(buf), offset);
-       offset += buf.byteLength;
-     }
-
-
-
-
-
-
-
-
-     // Create a blob URL for the merged data
-     const dataBlob = new Blob([merged], { type: "application/octet-stream" });
-     const dataUrl = URL.createObjectURL(dataBlob);
-
-
-
-
-
-
-
-
-     var config = {
-       dataUrl: dataUrl,
-       frameworkUrl: buildUrl + "/new version.framework.js.unityweb",
-       codeUrl: buildUrl + "/new version.wasm.unityweb",
-       streamingAssetsUrl: "StreamingAssets",
-       companyName: "DefaultCompany",
-       productName: "Safety Simulator",
-       productVersion: "0.2",
-       showBanner: unityShowBanner,
-     };
-
-
-
-
-
-
-
-
-     if (/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
-       var meta = document.createElement('meta');
-       meta.name = 'viewport';
-       meta.content = 'width=device-width, height=device-height, initial-scale=1.0, user-scalable=no, shrink-to-fit=yes';
-       document.getElementsByTagName('head')[0].appendChild(meta);
-       container.className = "unity-mobile";
-       canvas.className = "unity-mobile";
-     } else {
-       canvas.style.width = "1280px";
-       canvas.style.height = "720px";
-     }
-
-
-
-
-
-
-
-
-     loadingBar.style.display = "block";
-
-
-
-
-
-
-
-
-     var script = document.createElement("script");
-     script.src = buildUrl + "/new version.loader.js";
-     script.onload = () => {
-       createUnityInstance(canvas, config, (progress) => {
-         progressBarFull.style.width = 100 * progress + "%";
-       }).then((unityInstance) => {
-         loadingBar.style.display = "none";
-         // Free the blob URL after Unity has loaded
-         URL.revokeObjectURL(dataUrl);
-         fullscreenButton.onclick = () => {
-           unityInstance.SetFullscreen(1);
-         };
-       }).catch((message) => {
-         alert(message);
-       });
-     };
-
-
-
-
-
-
-
-
-     document.body.appendChild(script);
-   }
-
-
-
-
-
-
-
-
-   loadUnity();
-
-
-
-
-
-
-
-
- </script>
+<!-- Safari Hider Structure -->
+<div class="safari-hider-holder">
+  <div class="safari-scroller">
+    <div class="safari-scroller-inner">
+      <div class="safari-content"></div>
+    </div>
+  </div>
+</div>
+<div class="safari-overlay">
+  <div class="safari-bubble">
+    Scroll down slightly to hide browser bars for fullscreen mode
+  </div>
+</div>
+<div class="safari-spacer"></div>
+
+
+<div id="unity-container" class="unity-desktop">
+  <canvas id="unity-canvas" width=1280 height=720 tabindex="-1"></canvas>
+  <div id="unity-loading-bar">
+    <div id="unity-logo"></div>
+    <div id="unity-progress-bar-empty">
+      <div id="unity-progress-bar-full"></div>
+    </div>
+  </div>
+  <div id="unity-warning"> </div>
+  <div id="unity-footer">
+    <div id="unity-webgl-logo"></div>
+    <div id="unity-fullscreen-button"></div>
+    <div id="unity-build-title">Safety Simulator</div>
+  </div>
+</div>
+
+
+<script>
+  var container = document.querySelector("#unity-container");
+  var canvas = document.querySelector("#unity-canvas");
+  var loadingBar = document.querySelector("#unity-loading-bar");
+  var progressBarFull = document.querySelector("#unity-progress-bar-full");
+  var fullscreenButton = document.querySelector("#unity-fullscreen-button");
+  var warningBanner = document.querySelector("#unity-warning");
+
+
+  function unityShowBanner(msg, type) {
+    function updateBannerVisibility() {
+      warningBanner.style.display = warningBanner.children.length ? 'block' : 'none';
+    }
+    var div = document.createElement('div');
+    div.innerHTML = msg;
+    warningBanner.appendChild(div);
+    if (type == 'error') div.style = 'background: red; padding: 10px; color: white;';
+    else {
+      if (type == 'warning') div.style = 'background: yellow; padding: 10px;';
+      setTimeout(function () {
+        if(div.parentNode) warningBanner.removeChild(div);
+        updateBannerVisibility();
+      }, 5000);
+    }
+    updateBannerVisibility();
+  }
+
+
+  var buildUrl = "Build";
+
+
+  async function loadUnity() {
+    const parts = [
+      buildUrl + "/new version.data.part.unitywebaa",
+      buildUrl + "/new version.data.part.unitywebab"
+    ];
+
+
+    const responses = await Promise.all(parts.map(url => fetch(url)));
+
+
+    for (var i = 0; i < responses.length; i++) {
+      if (!responses[i].ok) {
+        unityShowBanner("Failed to load data part: " + parts[i], "error");
+        return;
+      }
+    }
+
+
+    const buffers = await Promise.all(responses.map(r => r.arrayBuffer()));
+    const totalLength = buffers.reduce((sum, b) => sum + b.byteLength, 0);
+    const merged = new Uint8Array(totalLength);
+    let offset = 0;
+    for (const buf of buffers) {
+      merged.set(new Uint8Array(buf), offset);
+      offset += buf.byteLength;
+    }
+
+
+    const dataBlob = new Blob([merged], { type: "application/octet-stream" });
+    const dataUrl = URL.createObjectURL(dataBlob);
+
+
+    var config = {
+      dataUrl: dataUrl,
+      frameworkUrl: buildUrl + "/new version.framework.js.unityweb",
+      codeUrl: buildUrl + "/new version.wasm.unityweb",
+      streamingAssetsUrl: "StreamingAssets",
+      companyName: "DefaultCompany",
+      productName: "Safety Simulator",
+      productVersion: "0.2",
+      showBanner: unityShowBanner,
+    };
+
+
+    // Strict Mobile Detection Logic
+    const isIOS = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    const isAndroid = /Android/i.test(navigator.userAgent);
+    const isMobile = isIOS || isAndroid;
+
+
+    if (isMobile) {
+      var meta = document.createElement('meta');
+      meta.name = 'viewport';
+      meta.content = 'width=device-width, height=device-height, initial-scale=1.0, user-scalable=no, shrink-to-fit=yes, viewport-fit=cover';
+      document.getElementsByTagName('head')[0].appendChild(meta);
+     
+      container.className = "unity-mobile";
+      canvas.className = "unity-mobile";
+
+
+      if (isIOS) {
+        const sOverlay = document.querySelector('.safari-overlay');
+        const sSpacer = document.querySelector('.safari-spacer');
+        const sContent = document.querySelector('.safari-content');
+        let tabsOpen = false;
+        let rafId = null;
+
+
+        function measure() {
+          if (rafId !== null) cancelAnimationFrame(rafId);
+          rafId = requestAnimationFrame(() => {
+            document.documentElement.style.setProperty('--isl-vh', (window.innerHeight * 0.01) + 'px');
+            const viewport = window.visualViewport;
+            const screenShort = Math.min(window.screen.width, window.screen.height);
+            const open = !!viewport && (viewport.height + viewport.offsetTop < screenShort - 20);
+
+
+            if (open === tabsOpen) return;
+            tabsOpen = open;
+
+
+            window.setTimeout(() => {
+              document.documentElement.classList.toggle('is-locked', !open);
+              sOverlay.classList.toggle('is-visible', open);
+              sSpacer.classList.toggle('is-visible', open);
+
+
+              if (!open) {
+                sContent.appendChild(container);
+              } else {
+                document.body.appendChild(container);
+              }
+
+
+              Object.assign(container.style, {
+                position: open ? 'fixed' : 'relative',
+                inset: open ? '0' : 'auto',
+                height: open ? '100dvh' : '100%',
+                width: open ? '100vw' : '100%',
+              });
+            }, open ? 0 : 100);
+          });
+        }
+
+
+        measure();
+        window.addEventListener('resize', measure, { passive: true });
+        window.addEventListener('orientationchange', measure, { passive: true });
+        window.addEventListener('scroll', measure, { passive: true });
+        if (window.visualViewport) {
+          window.visualViewport.addEventListener('resize', measure, { passive: true });
+          window.visualViewport.addEventListener('scroll', measure, { passive: true });
+        }
+      }
+    } else {
+      canvas.style.width = "1280px";
+      canvas.style.height = "720px";
+    }
+
+
+    loadingBar.style.display = "block";
+
+
+    var script = document.createElement("script");
+    script.src = buildUrl + "/new version.loader.js";
+    script.onload = () => {
+      createUnityInstance(canvas, config, (progress) => {
+        progressBarFull.style.width = 100 * progress + "%";
+      }).then((unityInstance) => {
+        loadingBar.style.display = "none";
+        URL.revokeObjectURL(dataUrl);
+        fullscreenButton.onclick = () => {
+          unityInstance.SetFullscreen(1);
+        };
+      }).catch((message) => {
+        alert(message);
+      });
+    };
+
+
+    document.body.appendChild(script);
+  }
+
+
+  loadUnity();
+</script>
 </body>
 </html>
