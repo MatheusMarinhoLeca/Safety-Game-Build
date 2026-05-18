@@ -269,7 +269,7 @@
       const isAndroid = /Android/i.test(navigator.userAgent);
       const isMobile = isIOS || isAndroid;
   
-      let measureRef = null;
+      let safariActive = false;
   
       if (isMobile) {
         var meta = document.createElement("meta");
@@ -295,12 +295,15 @@
           let tabsOpen = false;
           let rafId = null;
   
+          safariActive = true;
+  
           const nudge = () => window.scrollTo(0, 1);
           nudge();
           setTimeout(nudge, 100);
           setTimeout(nudge, 500);
   
           function measure() {
+            if (!safariActive) return;
             if (window.unityInstanceStarted) return;
   
             if (rafId !== null) {
@@ -333,7 +336,7 @@
   
               window.setTimeout(() => {
                 const shouldLock =
-                  !open && isIOS && !window.unityInstanceStarted;
+                  safariActive && !open && isIOS;
   
                 document.documentElement.classList.toggle(
                   "is-locked",
@@ -358,8 +361,6 @@
               }, open ? 0 : 100);
             });
           }
-  
-          measureRef = measure;
   
           measure();
   
@@ -388,12 +389,9 @@
   
           window.unityInstanceStarted = true;
   
-          // IMPORTANT: unlock scrolling after Unity starts
+          // shutdown safari system
+          safariActive = false;
           document.documentElement.classList.remove("is-locked");
-  
-          if (measureRef) {
-            measureRef = null;
-          }
   
           createUnityInstance(canvas, config, (progress) => {
             progressBarFull.style.width = 100 * progress + "%";
