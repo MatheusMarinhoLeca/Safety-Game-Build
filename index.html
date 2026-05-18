@@ -34,7 +34,7 @@
     html.is-locked,
     html.is-locked body {
       overflow: hidden;
-      position: fixed;
+      position: relative;
       width: 100vw;
       height: 100dvh;
       overscroll-behavior: none;
@@ -124,13 +124,19 @@
     }
 
     .spacer {
-      display: none;
+      display: block;
       width: 1px;
-      height: 2000vh;
+      height: 0;
+      pointer-events: none;
+      visibility: hidden;
+      z-index: -1;
     }
 
     .spacer.is-visible {
-      display: block;
+      height: 2000vh;
+      pointer-events: auto;
+      visibility: visible;
+      z-index: 5;
     }
   </style>
   <script>
@@ -285,36 +291,53 @@
           setTimeout(nudge, 100);
           setTimeout(nudge, 500);
   
+          let stabilizationTimer = null;
+  
           function measure() {
             if (rafId !== null) cancelAnimationFrame(rafId);
   
             rafId = requestAnimationFrame(() => {
               const viewport = window.visualViewport;
               const screenShort = Math.min(window.screen.width, window.screen.height);
-              const MOBILE_CHROME_TOP_BAR_HEIGHT = 20;
+              const MOBILE_CHROME_TOP_BAR_HEIGHT = 40; // Slightly larger threshold for stability
   
               const open = !!viewport &&
                 viewport.height + viewport.offsetTop <
                   screenShort - MOBILE_CHROME_TOP_BAR_HEIGHT;
   
               if (open === tabsOpen && !window.forceUpdate) return;
-              tabsOpen = open;
-              window.forceUpdate = false;
+              
+              // Clear any pending stabilization
+              if (stabilizationTimer) clearTimeout(stabilizationTimer);
   
-              const shouldLock = !open && isIOS;
-              document.documentElement.classList.toggle("is-locked", shouldLock);
+              const updateLayout = () => {
+                tabsOpen = open;
+                window.forceUpdate = false;
   
-              overlay.classList.toggle("is-visible", open);
-              spacer.classList.toggle("is-visible", open);
+                const shouldLock = !open && isIOS;
+                document.documentElement.classList.toggle("is-locked", shouldLock);
   
-              Object.assign(container.style, {
-                position: "fixed",
-                inset: "0",
-                height: "100dvh",
-                width: "100vw",
-                pointerEvents: open ? "none" : "auto", 
-                zIndex: open ? "1" : "20"
-              });
+                overlay.classList.toggle("is-visible", open);
+                spacer.classList.toggle("is-visible", open);
+  
+                Object.assign(container.style, {
+                  position: "fixed",
+                  inset: "0",
+                  height: "100dvh",
+                  width: "100vw",
+                  pointerEvents: open ? "none" : "auto", 
+                  zIndex: open ? "1" : "20"
+                });
+              };
+  
+              if (!open) {
+                // When bars are HIDDEN (entering fullscreen), wait for stabilization
+                // to prevent "snap back" during Safari's animation.
+                stabilizationTimer = setTimeout(updateLayout, 300);
+              } else {
+                // When bars are OPENED, update immediately for responsiveness
+                updateLayout();
+              }
             });
           }
   
