@@ -13,13 +13,13 @@
 
 
   html, body {
-    min-height: 100%;
     width: 100%;
     margin: 0;
     padding: 0;
     background-color: #232323;
     font-family: system-ui, sans-serif;
-    /* Base overflow must be auto/visible for Safari to allow UI collapsing */
+    /* Enforce a large min-height to ensure Safari sees a scrollable area on mobile */
+    min-height: 2000vh;
     overflow: auto;
   }
 
@@ -28,9 +28,9 @@
     overflow: hidden;
     position: relative;
     height: 100dvh;
+    min-height: 100dvh;
     overscroll-behavior: none;
   }
-
 
   /* Desktop Centering Fix: Prevents black screen on macOS */
   #unity-container.unity-desktop {
@@ -227,6 +227,8 @@
         let tabsOpen = false;
         let rafId = null;
 
+        // Force spacer visibility immediately on iOS to enable scrolling in mobile mode
+        sSpacer.classList.add('is-visible');
 
         function measure() {
           if (rafId !== null) cancelAnimationFrame(rafId);
