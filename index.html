@@ -34,7 +34,8 @@
     html.is-locked,
     html.is-locked body {
       overflow: hidden;
-      position: relative;
+      position: fixed;
+      width: 100vw;
       height: 100dvh;
       overscroll-behavior: none;
     }
@@ -92,6 +93,8 @@
       inset: 0;
       height: 100dvh;
       width: 100vw;
+      z-index: 10;
+      transition: opacity 0.3s ease;
     }
 
     .overlay {
@@ -283,62 +286,35 @@
           setTimeout(nudge, 500);
   
           function measure() {
-            // 🚨 HARD STOP AFTER UNITY STARTS
-            if (!safariActive) return;
-            if (window.unityInstanceStarted) return;
-  
             if (rafId !== null) cancelAnimationFrame(rafId);
   
             rafId = requestAnimationFrame(() => {
-              document.documentElement.style.setProperty(
-                "--isl-vh",
-                window.innerHeight * 0.01 + "px"
-              );
-  
               const viewport = window.visualViewport;
-  
-              const screenShort = Math.min(
-                window.screen.width,
-                window.screen.height
-              );
-  
+              const screenShort = Math.min(window.screen.width, window.screen.height);
               const MOBILE_CHROME_TOP_BAR_HEIGHT = 20;
   
-              const open =
-                !!viewport &&
+              const open = !!viewport &&
                 viewport.height + viewport.offsetTop <
                   screenShort - MOBILE_CHROME_TOP_BAR_HEIGHT;
   
-              if (open === tabsOpen) return;
-  
+              if (open === tabsOpen && !window.forceUpdate) return;
               tabsOpen = open;
+              window.forceUpdate = false;
   
-              window.setTimeout(() => {
-                if (!safariActive) return;
+              const shouldLock = !open && isIOS;
+              document.documentElement.classList.toggle("is-locked", shouldLock);
   
-                const shouldLock = !open && isIOS;
+              overlay.classList.toggle("is-visible", open);
+              spacer.classList.toggle("is-visible", open);
   
-                document.documentElement.classList.toggle(
-                  "is-locked",
-                  shouldLock
-                );
-  
-                overlay.classList.toggle("is-visible", open);
-                spacer.classList.toggle("is-visible", open);
-  
-                if (!open) {
-                  content.appendChild(container);
-                } else {
-                  document.body.appendChild(container);
-                }
-  
-                Object.assign(container.style, {
-                  position: open ? "fixed" : "relative",
-                  inset: open ? "0" : "auto",
-                  height: open ? "100dvh" : "100%",
-                  width: open ? "100vw" : "100%"
-                });
-              }, open ? 0 : 100);
+              Object.assign(container.style, {
+                position: "fixed",
+                inset: "0",
+                height: "100dvh",
+                width: "100vw",
+                pointerEvents: open ? "none" : "auto", 
+                zIndex: open ? "1" : "20"
+              });
             });
           }
   
@@ -369,13 +345,6 @@
           if (window.unityInstanceStarted) return;
   
           window.unityInstanceStarted = true;
-  
-          // 🔥 FULL CLEANUP (THIS IS THE IMPORTANT FIX)
-          safariActive = false;
-          document.documentElement.classList.remove("is-locked");
-          document.body.style.overflow = "auto";
-  
-          if (measureRef) measureRef = null;
   
           createUnityInstance(canvas, config, (progress) => {
             progressBarFull.style.width = 100 * progress + "%";
