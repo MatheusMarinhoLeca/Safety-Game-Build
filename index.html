@@ -13,14 +13,12 @@
 
 
   html, body {
-    height: 100%;
+    min-height: 100%;
     width: 100%;
     margin: 0;
     padding: 0;
     background-color: #232323;
     font-family: system-ui, sans-serif;
-    /* Reset to 100% as requested. Spacer will handle the scroll length. */
-    overflow: auto;
   }
 
   html.is-locked,
@@ -212,7 +210,7 @@
     if (isMobile) {
       var meta = document.createElement('meta');
       meta.name = 'viewport';
-      meta.content = 'width=device-width, height=device-height, initial-scale=1.0, user-scalable=no, shrink-to-fit=yes, viewport-fit=cover';
+      meta.content = 'width=device-width, initial-scale=1.0, user-scalable=no, shrink-to-fit=yes, viewport-fit=cover';
       document.getElementsByTagName('head')[0].appendChild(meta);
      
       container.className = "unity-mobile";
@@ -230,10 +228,16 @@
        sSpacer.classList.add('is-visible');
 
        // Programmatic attempt to hide Safari bars. 
-       // We scroll a specific amount (500px) which is usually enough to collapse bars.
-       setTimeout(() => {
-         window.scrollTo(0, 500);
-       }, 500);
+       // scrollTo(0, 1) is the standard way to trigger Safari bar collapse.
+       const nudge = () => {
+         window.scrollTo(0, 1);
+       };
+       
+       // Try multiple times as layout settles
+       nudge();
+       setTimeout(nudge, 100);
+       setTimeout(nudge, 500);
+       setTimeout(nudge, 1000);
 
        function measure() {
           if (rafId !== null) cancelAnimationFrame(rafId);
