@@ -160,7 +160,7 @@
 
 <body>
   <div class="spacer"></div>
-  <div class="vertical-spacer" style="height: 150px; width: 1px; position: absolute; top: 0; left: 0; pointer-events: none; visibility: hidden;"></div>
+  <div class="vertical-spacer" style="width: 1px; pointer-events: none; visibility: hidden; display: none;"></div>
 
   <div id="unity-container" class="unity-desktop fullscreen-game">
     <canvas id="unity-canvas" width=1280 height=720 tabindex="-1"></canvas>
@@ -354,11 +354,11 @@
               overlay.classList.toggle("is-visible", open);
               
               if (open) {
-                verticalSpacer.style.visibility = "visible";
                 verticalSpacer.style.display = "block";
+                verticalSpacer.style.height = "110dvh"; 
               } else {
-                verticalSpacer.style.visibility = "hidden";
                 verticalSpacer.style.display = "none";
+                verticalSpacer.style.height = "0px";
               }
 
               Object.assign(container.style, {
