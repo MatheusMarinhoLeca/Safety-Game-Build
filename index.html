@@ -101,7 +101,7 @@
       position: fixed;
       inset: 0;
       background: #1a1a1a;
-      display: flex;
+      display: none;
       flex-direction: column;
       align-items: center;
       justify-content: center;
@@ -332,6 +332,40 @@
       let measureRef = null;
   
       if (isMobile) {
+        // Show preloader only on mobile
+        document.querySelector(".preloader-overlay").style.display = 'flex';
+
+        // --- ROTATION RECOVERY LOGIC ---
+        // Orientation changes often break minimal-ui mode. We detect the change
+        // and force a reload to let the browser re-stabilize the viewport.
+        const initialOrientation = window.innerHeight > window.innerWidth ? 'portrait' : 'landscape';
+        
+        const handleRotation = () => {
+          const currentOrientation = window.innerHeight > window.innerWidth ? 'portrait' : 'landscape';
+          if (currentOrientation !== initialOrientation) {
+            // Save state so we can skip the "Ready" screen after reload
+            sessionStorage.setItem('rotation_reload', 'true');
+            window.location.reload();
+          }
+        };
+
+        window.addEventListener("orientationchange", handleRotation);
+        // Backup for browsers that don't support orientationchange well
+        window.addEventListener("resize", () => {
+          // Only trigger if aspect ratio actually flipped
+          const currentOrientation = window.innerHeight > window.innerWidth ? 'portrait' : 'landscape';
+          if (currentOrientation !== initialOrientation) {
+             handleRotation();
+          }
+        }, { passive: true });
+
+        // Auto-start Unity if we just reloaded from a rotation
+        if (sessionStorage.getItem('rotation_reload') === 'true') {
+          sessionStorage.removeItem('rotation_reload');
+          window.userReady = true; 
+          // We still wait for the loader script to be ready in script.onload
+        }
+
         var meta = document.createElement("meta");
         meta.name = "viewport";
         meta.content =
@@ -469,6 +503,7 @@
       } else {
         canvas.style.width = "1280px";
         canvas.style.height = "720px";
+        window.userReady = true; 
       }
   
       loadingBar.style.display = "block";
