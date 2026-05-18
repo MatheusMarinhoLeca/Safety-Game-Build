@@ -89,11 +89,8 @@
 
     .fullscreen-game {
       border-style: none;
-      position: fixed;
-      inset: 0;
-      height: 100dvh;
       width: 100vw;
-      z-index: 10;
+      height: 100dvh;
       transition: opacity 0.3s ease;
     }
 
@@ -108,7 +105,20 @@
       pointer-events: none;
     }
 
-    .overlay.is-visible {
+    .overlay-rotation {
+      position: fixed;
+      inset: 0;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      z-index: 2147483648;
+      background: rgba(0, 0, 0, 0.7);
+      backdrop-filter: blur(8px);
+      pointer-events: auto;
+    }
+
+    .overlay-rotation.is-visible {
       display: flex;
     }
 
@@ -118,9 +128,10 @@
       background: rgba(0, 0, 0, 0.5);
       color: #fff;
       border-radius: 96px;
-      padding: 12px;
+      padding: 12px 24px;
       font-size: 14px;
       pointer-events: auto;
+      text-align: center;
     }
 
     .spacer {
@@ -156,6 +167,11 @@
   <div class="overlay">
     <div class="bubble">
       Scroll down a bit to hide the browser bars and enjoy the full screen
+    </div>
+  </div>
+  <div class="overlay-rotation">
+    <div class="bubble">
+      Please rotate your device to landscape mode for the best experience
     </div>
   </div>
   <div class="spacer"></div>
@@ -275,6 +291,15 @@
   
         canvas.style.width = "100%";
         canvas.style.height = "100%";
+
+        const rotationOverlay = document.querySelector(".overlay-rotation");
+        const checkOrientation = () => {
+          const isPortrait = window.innerHeight > window.innerWidth;
+          rotationOverlay.classList.toggle("is-visible", isPortrait);
+        };
+        window.addEventListener("resize", checkOrientation, { passive: true });
+        window.addEventListener("orientationchange", checkOrientation, { passive: true });
+        checkOrientation();
   
         if (isIOS) {
           const overlay = document.querySelector(".overlay");
@@ -299,7 +324,7 @@
             rafId = requestAnimationFrame(() => {
               const viewport = window.visualViewport;
               const screenShort = Math.min(window.screen.width, window.screen.height);
-              const MOBILE_CHROME_TOP_BAR_HEIGHT = 40; // Slightly larger threshold for stability
+              const MOBILE_CHROME_TOP_BAR_HEIGHT = 40;
   
               const open = !!viewport &&
                 viewport.height + viewport.offsetTop <
@@ -307,7 +332,6 @@
   
               if (open === tabsOpen && !window.forceUpdate) return;
               
-              // Clear any pending stabilization
               if (stabilizationTimer) clearTimeout(stabilizationTimer);
   
               const updateLayout = () => {
@@ -320,22 +344,23 @@
                 overlay.classList.toggle("is-visible", open);
                 spacer.classList.toggle("is-visible", open);
   
+                // Use STICKY when open to allow scroll gestures to reach the body
+                // but keep the game interactive and visible.
                 Object.assign(container.style, {
-                  position: "fixed",
-                  inset: "0",
+                  position: open ? "sticky" : "fixed",
+                  top: "0",
+                  left: "0",
                   height: "100dvh",
                   width: "100vw",
-                  pointerEvents: open ? "none" : "auto", 
-                  zIndex: open ? "1" : "20"
+                  pointerEvents: "auto", 
+                  zIndex: "20"
                 });
               };
   
               if (!open) {
-                // When bars are HIDDEN (entering fullscreen), wait for stabilization
-                // to prevent "snap back" during Safari's animation.
+                // Wait for browser UI to settle before locking
                 stabilizationTimer = setTimeout(updateLayout, 300);
               } else {
-                // When bars are OPENED, update immediately for responsiveness
                 updateLayout();
               }
             });
