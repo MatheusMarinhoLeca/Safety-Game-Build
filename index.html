@@ -197,7 +197,6 @@
           if (div.parentNode) {
             warningBanner.removeChild(div);
           }
-  
           updateBannerVisibility();
         }, 5000);
       }
@@ -253,10 +252,8 @@
   
       var config = {
         dataUrl: dataUrl,
-        frameworkUrl:
-          buildUrl + "/new version.framework.js.unityweb",
-        codeUrl:
-          buildUrl + "/new version.wasm.unityweb",
+        frameworkUrl: buildUrl + "/new version.framework.js.unityweb",
+        codeUrl: buildUrl + "/new version.wasm.unityweb",
         streamingAssetsUrl: "StreamingAssets",
         companyName: "DefaultCompany",
         productName: "Safety Simulator",
@@ -270,23 +267,19 @@
           navigator.maxTouchPoints > 1);
   
       const isAndroid = /Android/i.test(navigator.userAgent);
-  
       const isMobile = isIOS || isAndroid;
+  
+      let measureRef = null;
   
       if (isMobile) {
         var meta = document.createElement("meta");
-  
         meta.name = "viewport";
         meta.content =
           "width=device-width, initial-scale=1.0, user-scalable=no, shrink-to-fit=yes, viewport-fit=cover";
   
-        document
-          .getElementsByTagName("head")[0]
-          .appendChild(meta);
+        document.getElementsByTagName("head")[0].appendChild(meta);
   
-        container.className =
-          "unity-mobile fullscreen-game";
-  
+        container.className = "unity-mobile fullscreen-game";
         canvas.className = "unity-mobile";
   
         canvas.style.width = "100%";
@@ -295,27 +288,21 @@
         container.style.overflow = "hidden";
   
         if (isIOS) {
-          const overlay =
-            document.querySelector(".overlay");
-  
-          const spacer =
-            document.querySelector(".spacer");
-  
-          const content =
-            document.querySelector(".content");
+          const overlay = document.querySelector(".overlay");
+          const spacer = document.querySelector(".spacer");
+          const content = document.querySelector(".content");
   
           let tabsOpen = false;
           let rafId = null;
   
-          const nudge = () => {
-            window.scrollTo(0, 1);
-          };
-  
+          const nudge = () => window.scrollTo(0, 1);
           nudge();
           setTimeout(nudge, 100);
           setTimeout(nudge, 500);
   
           function measure() {
+            if (window.unityInstanceStarted) return;
+  
             if (rafId !== null) {
               cancelAnimationFrame(rafId);
             }
@@ -338,36 +325,23 @@
               const open =
                 !!viewport &&
                 viewport.height + viewport.offsetTop <
-                  screenShort -
-                    MOBILE_CHROME_TOP_BAR_HEIGHT;
+                  screenShort - MOBILE_CHROME_TOP_BAR_HEIGHT;
   
-              if (open === tabsOpen) {
-                return;
-              }
-  
-              if (!open && tabsOpen) {
-                window.dispatchEvent(
-                  new CustomEvent("safariBarsHidden")
-                );
-              }
+              if (open === tabsOpen) return;
   
               tabsOpen = open;
   
               window.setTimeout(() => {
+                const shouldLock =
+                  !open && isIOS && !window.unityInstanceStarted;
+  
                 document.documentElement.classList.toggle(
                   "is-locked",
-                  !open
+                  shouldLock
                 );
   
-                overlay.classList.toggle(
-                  "is-visible",
-                  open
-                );
-  
-                spacer.classList.toggle(
-                  "is-visible",
-                  open
-                );
+                overlay.classList.toggle("is-visible", open);
+                spacer.classList.toggle("is-visible", open);
   
                 if (!open) {
                   content.appendChild(container);
@@ -385,38 +359,17 @@
             });
           }
   
+          measureRef = measure;
+  
           measure();
   
-          window.addEventListener(
-            "resize",
-            measure,
-            { passive: true }
-          );
-  
-          window.addEventListener(
-            "orientationchange",
-            measure,
-            { passive: true }
-          );
-  
-          window.addEventListener(
-            "scroll",
-            measure,
-            { passive: true }
-          );
+          window.addEventListener("resize", measure, { passive: true });
+          window.addEventListener("orientationchange", measure, { passive: true });
+          window.addEventListener("scroll", measure, { passive: true });
   
           if (window.visualViewport) {
-            window.visualViewport.addEventListener(
-              "resize",
-              measure,
-              { passive: true }
-            );
-  
-            window.visualViewport.addEventListener(
-              "scroll",
-              measure,
-              { passive: true }
-            );
+            window.visualViewport.addEventListener("resize", measure, { passive: true });
+            window.visualViewport.addEventListener("scroll", measure, { passive: true });
           }
         }
       } else {
@@ -427,29 +380,26 @@
       loadingBar.style.display = "block";
   
       var script = document.createElement("script");
-  
-      script.src =
-        buildUrl + "/new version.loader.js";
+      script.src = buildUrl + "/new version.loader.js";
   
       script.onload = () => {
         const startUnity = () => {
-          if (window.unityInstanceStarted) {
-            return;
-          }
+          if (window.unityInstanceStarted) return;
   
           window.unityInstanceStarted = true;
   
-          createUnityInstance(
-            canvas,
-            config,
-            (progress) => {
-              progressBarFull.style.width =
-                100 * progress + "%";
-            }
-          )
+          // IMPORTANT: unlock scrolling after Unity starts
+          document.documentElement.classList.remove("is-locked");
+  
+          if (measureRef) {
+            measureRef = null;
+          }
+  
+          createUnityInstance(canvas, config, (progress) => {
+            progressBarFull.style.width = 100 * progress + "%";
+          })
             .then((unityInstance) => {
               loadingBar.style.display = "none";
-  
               URL.revokeObjectURL(dataUrl);
   
               fullscreenButton.onclick = () => {
@@ -465,19 +415,10 @@
           isIOS &&
           window.visualViewport &&
           window.visualViewport.height <
-            Math.min(
-              window.screen.width,
-              window.screen.height
-            ) -
-              20;
+            Math.min(window.screen.width, window.screen.height) - 20;
   
         if (isCurrentlyWindowed) {
-          window.addEventListener(
-            "safariBarsHidden",
-            startUnity,
-            { once: true }
-          );
-  
+          window.addEventListener("safariBarsHidden", startUnity, { once: true });
           setTimeout(startUnity, 8000);
         } else {
           startUnity();
