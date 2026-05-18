@@ -13,13 +13,13 @@
 
 
   html, body {
-    min-height: 100%;
+    height: 100%;
     width: 100%;
     margin: 0;
     padding: 0;
     background-color: #232323;
     font-family: system-ui, sans-serif;
-    /* Base overflow must be auto/visible for Safari to allow UI collapsing */
+    /* Reset to 100% as requested. Spacer will handle the scroll length. */
     overflow: auto;
   }
 
@@ -229,10 +229,11 @@
        // Force spacer visibility immediately on iOS to enable scrolling in mobile mode
        sSpacer.classList.add('is-visible');
 
-       // Auto-scroll to bottom immediately to attempt hiding Safari bars programmatically
-       window.scrollTo(0, document.body.scrollHeight || 10000);
-       // Repeat after a short delay to catch layout shifts
-       setTimeout(() => window.scrollTo(0, document.body.scrollHeight || 10000), 500);
+       // Programmatic attempt to hide Safari bars. 
+       // We scroll a specific amount (500px) which is usually enough to collapse bars.
+       setTimeout(() => {
+         window.scrollTo(0, 500);
+       }, 500);
 
        function measure() {
           if (rafId !== null) cancelAnimationFrame(rafId);
