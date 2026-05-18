@@ -159,6 +159,22 @@
 </head>
 
 <body>
+  <div id="unity-container" class="unity-desktop fullscreen-game">
+    <canvas id="unity-canvas" width=1280 height=720 tabindex="-1"></canvas>
+    <div id="unity-loading-bar">
+      <div id="unity-logo"></div>
+      <div id="unity-progress-bar-empty">
+        <div id="unity-progress-bar-full"></div>
+      </div>
+    </div>
+    <div id="unity-warning"> </div>
+    <div id="unity-footer">
+      <div id="unity-webgl-logo"></div>
+      <div id="unity-fullscreen-button"></div>
+      <div id="unity-build-title">Safety Simulator</div>
+    </div>
+  </div>
+
   <!-- Safari Hider Structure -->
   <div class="holder">
     <div class="scroller">
@@ -178,22 +194,6 @@
     </div>
   </div>
   <div class="spacer"></div>
-
-  <div id="unity-container" class="unity-desktop fullscreen-game">
-    <canvas id="unity-canvas" width=1280 height=720 tabindex="-1"></canvas>
-    <div id="unity-loading-bar">
-      <div id="unity-logo"></div>
-      <div id="unity-progress-bar-empty">
-        <div id="unity-progress-bar-full"></div>
-      </div>
-    </div>
-    <div id="unity-warning"> </div>
-    <div id="unity-footer">
-      <div id="unity-webgl-logo"></div>
-      <div id="unity-fullscreen-button"></div>
-      <div id="unity-build-title">Safety Simulator</div>
-    </div>
-  </div>
 
   <script>
     var container = document.querySelector("#unity-container");
@@ -296,6 +296,9 @@
         canvas.style.height = "100%";
 
         const rotationOverlay = document.querySelector(".overlay-rotation");
+        const overlay = document.querySelector(".overlay");
+        const spacer = document.querySelector(".spacer");
+        
         const checkOrientation = () => {
           const isPortrait = window.innerHeight > window.innerWidth;
           rotationOverlay.classList.toggle("is-visible", isPortrait);
@@ -303,92 +306,79 @@
         window.addEventListener("resize", checkOrientation, { passive: true });
         window.addEventListener("orientationchange", checkOrientation, { passive: true });
         checkOrientation();
-  
-        if (isIOS) {
-          const overlay = document.querySelector(".overlay");
-          const spacer = document.querySelector(".spacer");
-          const content = document.querySelector(".content");
-  
-          let tabsOpen = false;
-          let rafId = null;
-  
-          safariActive = true;
-  
-          const nudge = () => window.scrollTo(0, 1);
-          nudge();
-          setTimeout(nudge, 100);
-          setTimeout(nudge, 500);
-  
-          let stabilizationTimer = null;
-  
-          function measure() {
-            if (rafId !== null) cancelAnimationFrame(rafId);
-  
-            rafId = requestAnimationFrame(() => {
-              const viewport = window.visualViewport;
-              const screenShort = Math.min(window.screen.width, window.screen.height);
-              const MOBILE_CHROME_TOP_BAR_HEIGHT = 40;
-  
-              const open = !!viewport &&
-                viewport.height + viewport.offsetTop <
-                  screenShort - MOBILE_CHROME_TOP_BAR_HEIGHT;
-  
-              if (open === tabsOpen && !window.forceUpdate) return;
-              
-              if (stabilizationTimer) clearTimeout(stabilizationTimer);
-  
-              const updateLayout = () => {
-                tabsOpen = open;
-                window.forceUpdate = false;
-  
-                const shouldLock = !open && isIOS;
-                document.documentElement.classList.toggle("is-locked", shouldLock);
-  
-                overlay.classList.toggle("is-visible", open);
-                spacer.classList.toggle("is-visible", open);
-  
-                // Use STICKY when open to allow scroll gestures to reach the body
-                // but keep the game interactive and visible.
-                Object.assign(container.style, {
-                  position: open ? "sticky" : "fixed",
-                  top: "0",
-                  left: "0",
-                  height: "100dvh",
-                  width: "100vw",
-                  pointerEvents: "auto", 
-                  zIndex: "20"
-                });
-              };
-  
-              if (!open) {
-                // Wait for browser UI to settle before locking
-                stabilizationTimer = setTimeout(updateLayout, 300);
-              } else {
-                updateLayout();
-              }
-            });
-          }
-  
-          measureRef = measure;
-          measure();
-  
-          window.addEventListener("resize", measure, { passive: true });
-          window.addEventListener("orientationchange", measure, { passive: true });
-          window.addEventListener("scroll", measure, { passive: true });
-  
-          if (window.visualViewport) {
-            window.visualViewport.addEventListener("resize", measure, { passive: true });
-            window.visualViewport.addEventListener("scroll", measure, { passive: true });
-          }
-        } else {
-          // Explicitly set fixed for Android to ensure layering
-          Object.assign(container.style, {
-            position: "fixed",
-            inset: "0",
-            height: "100dvh",
-            width: "100vw",
-            zIndex: "10"
+
+        let tabsOpen = false;
+        let rafId = null;
+        let stabilizationTimer = null;
+
+        const nudge = () => window.scrollTo(0, 1);
+        nudge();
+        setTimeout(nudge, 100);
+        setTimeout(nudge, 500);
+
+        function measure() {
+          if (rafId !== null) cancelAnimationFrame(rafId);
+
+          rafId = requestAnimationFrame(() => {
+            const viewport = window.visualViewport;
+            const isPortrait = window.innerHeight > window.innerWidth;
+            
+            // On mobile, the "short" dimension of the screen is the landscape height
+            const screenShort = Math.min(window.screen.width, window.screen.height);
+            // On mobile, the "long" dimension of the screen is the portrait height
+            const screenLong = Math.max(window.screen.width, window.screen.height);
+            
+            const targetHeight = isPortrait ? screenLong : screenShort;
+            const threshold = 40;
+
+            const open = !!viewport &&
+              viewport.height + viewport.offsetTop <
+                targetHeight - threshold;
+
+            if (open === tabsOpen && !window.forceUpdate) return;
+            
+            if (stabilizationTimer) clearTimeout(stabilizationTimer);
+
+            const updateLayout = () => {
+              tabsOpen = open;
+              window.forceUpdate = false;
+
+              // Only lock on iOS when bars are hidden to prevent the "elastic" scroll back
+              const shouldLock = !open && isIOS;
+              document.documentElement.classList.toggle("is-locked", shouldLock);
+
+              overlay.classList.toggle("is-visible", open);
+              spacer.classList.toggle("is-visible", open);
+
+              Object.assign(container.style, {
+                position: open ? "sticky" : "fixed",
+                top: "0",
+                left: "0",
+                height: "100dvh",
+                width: "100vw",
+                pointerEvents: "auto", 
+                zIndex: "20"
+              });
+            };
+
+            if (!open) {
+              stabilizationTimer = setTimeout(updateLayout, 300);
+            } else {
+              updateLayout();
+            }
           });
+        }
+
+        measureRef = measure;
+        measure();
+
+        window.addEventListener("resize", measure, { passive: true });
+        window.addEventListener("orientationchange", measure, { passive: true });
+        window.addEventListener("scroll", measure, { passive: true });
+
+        if (window.visualViewport) {
+          window.visualViewport.addEventListener("resize", measure, { passive: true });
+          window.visualViewport.addEventListener("scroll", measure, { passive: true });
         }
       } else {
         canvas.style.width = "1280px";
