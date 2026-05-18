@@ -159,9 +159,6 @@
 </head>
 
 <body>
-  <div class="spacer"></div>
-  <div class="vertical-spacer" style="width: 1px; pointer-events: none; visibility: hidden; display: none;"></div>
-
   <div id="unity-container" class="unity-desktop fullscreen-game">
     <canvas id="unity-canvas" width=1280 height=720 tabindex="-1"></canvas>
     <div id="unity-loading-bar">
@@ -178,14 +175,6 @@
     </div>
   </div>
 
-  <!-- Safari Hider Structure -->
-  <div class="holder">
-    <div class="scroller">
-      <div class="scroller-inner">
-        <div class="content"></div>
-      </div>
-    </div>
-  </div>
   <div class="overlay">
     <div class="bubble">
       Scroll down a bit to hide the browser bars and enjoy the full screen
@@ -196,6 +185,8 @@
       Please rotate your device to landscape mode for the best experience
     </div>
   </div>
+
+  <div class="vertical-spacer" style="width: 1px; pointer-events: none; visibility: hidden; display: none;"></div>
 
   <script>
     var container = document.querySelector("#unity-container");
@@ -303,6 +294,33 @@
         
         const verticalSpacer = document.querySelector(".vertical-spacer");
         
+        // --- SWIPE-TO-SCROLL BYPASS ---
+        // Unity captures all touch events. If browser bars are open, we temporarily 
+        // disable game interaction during a vertical swipe so the browser can scroll.
+        container.addEventListener('touchstart', (e) => {
+          if (!tabsOpen) return;
+          const startY = e.touches[0].clientY;
+          
+          const onTouchMove = (moveEvent) => {
+            const currentY = moveEvent.touches[0].clientY;
+            // If user moves vertically more than 5px, disable game interaction 
+            // so the touch gesture "falls through" to the background scroll.
+            if (Math.abs(currentY - startY) > 5) {
+              container.style.pointerEvents = 'none';
+              window.removeEventListener('touchmove', onTouchMove);
+            }
+          };
+          
+          const onTouchEnd = () => {
+            container.style.pointerEvents = 'auto';
+            window.removeEventListener('touchmove', onTouchMove);
+            window.removeEventListener('touchend', onTouchEnd);
+          };
+
+          window.addEventListener('touchmove', onTouchMove, { passive: true });
+          window.addEventListener('touchend', onTouchEnd, { passive: true });
+        }, { passive: true });
+
         const checkOrientation = () => {
           const isPortrait = window.innerHeight > window.innerWidth;
           rotationOverlay.classList.toggle("is-visible", isPortrait);
