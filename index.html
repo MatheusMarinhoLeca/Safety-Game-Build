@@ -13,13 +13,13 @@
 
 
   html, body {
+    min-height: 100%;
     width: 100%;
     margin: 0;
     padding: 0;
     background-color: #232323;
     font-family: system-ui, sans-serif;
-    /* Enforce a large min-height to ensure Safari sees a scrollable area on mobile */
-    min-height: 2000vh;
+    /* Base overflow must be auto/visible for Safari to allow UI collapsing */
     overflow: auto;
   }
 
@@ -28,7 +28,6 @@
     overflow: hidden;
     position: relative;
     height: 100dvh;
-    min-height: 100dvh;
     overscroll-behavior: none;
   }
 
@@ -227,10 +226,15 @@
         let tabsOpen = false;
         let rafId = null;
 
-        // Force spacer visibility immediately on iOS to enable scrolling in mobile mode
-        sSpacer.classList.add('is-visible');
+       // Force spacer visibility immediately on iOS to enable scrolling in mobile mode
+       sSpacer.classList.add('is-visible');
 
-        function measure() {
+       // Auto-scroll to bottom immediately to attempt hiding Safari bars programmatically
+       window.scrollTo(0, document.body.scrollHeight || 10000);
+       // Repeat after a short delay to catch layout shifts
+       setTimeout(() => window.scrollTo(0, document.body.scrollHeight || 10000), 500);
+
+       function measure() {
           if (rafId !== null) cancelAnimationFrame(rafId);
           rafId = requestAnimationFrame(() => {
             document.documentElement.style.setProperty('--isl-vh', (window.innerHeight * 0.01) + 'px');
