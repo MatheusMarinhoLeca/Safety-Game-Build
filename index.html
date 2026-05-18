@@ -159,6 +159,9 @@
 </head>
 
 <body>
+  <div class="spacer"></div>
+  <div class="vertical-spacer" style="height: 150px; width: 1px; position: absolute; top: 0; left: 0; pointer-events: none; visibility: hidden;"></div>
+
   <div id="unity-container" class="unity-desktop fullscreen-game">
     <canvas id="unity-canvas" width=1280 height=720 tabindex="-1"></canvas>
     <div id="unity-loading-bar">
@@ -193,11 +196,7 @@
       Please rotate your device to landscape mode for the best experience
     </div>
   </div>
-  <div class="spacer"></div>
-  <div class="spacer"></div>
-  <div class="spacer"></div>
-  <div class="spacer"></div>
-  <div class="spacer"></div>
+
   <script>
     var container = document.querySelector("#unity-container");
     var canvas = document.querySelector("#unity-canvas");
@@ -302,6 +301,8 @@
         const overlay = document.querySelector(".overlay");
         const spacer = document.querySelector(".spacer");
         
+        const verticalSpacer = document.querySelector(".vertical-spacer");
+        
         const checkOrientation = () => {
           const isPortrait = window.innerHeight > window.innerWidth;
           rotationOverlay.classList.toggle("is-visible", isPortrait);
@@ -314,7 +315,9 @@
         let rafId = null;
         let stabilizationTimer = null;
 
-        const nudge = () => window.scrollTo(0, 1);
+        const nudge = () => {
+          if (window.scrollY === 0) window.scrollTo(0, 1);
+        };
         nudge();
         setTimeout(nudge, 100);
         setTimeout(nudge, 500);
@@ -324,19 +327,18 @@
 
           rafId = requestAnimationFrame(() => {
             const viewport = window.visualViewport;
-            const isPortrait = window.innerHeight > window.innerWidth;
-            
-            // On mobile, the "short" dimension of the screen is the landscape height
-            const screenShort = Math.min(window.screen.width, window.screen.height);
-            // On mobile, the "long" dimension of the screen is the portrait height
-            const screenLong = Math.max(window.screen.width, window.screen.height);
-            
-            const targetHeight = isPortrait ? screenLong : screenShort;
-            const threshold = 40;
+            if (!viewport) return;
 
-            const open = !!viewport &&
-              viewport.height + viewport.offsetTop <
-                targetHeight - threshold;
+            // Use the document's clientHeight as the "target" height for a full viewport.
+            // On mobile, clientHeight reflects the height without the browser bars (minimal UI).
+            const isPortrait = window.innerHeight > window.innerWidth;
+            const screenShort = Math.min(window.screen.width, window.screen.height);
+            const screenLong = Math.max(window.screen.width, window.screen.height);
+            const targetHeight = isPortrait ? screenLong : screenShort;
+            
+            // Detection threshold: If viewport is significantly smaller than screen height, tabs are open.
+            const threshold = 60; 
+            const open = (viewport.height + viewport.offsetTop) < (targetHeight - threshold);
 
             if (open === tabsOpen && !window.forceUpdate) return;
             
@@ -346,12 +348,18 @@
               tabsOpen = open;
               window.forceUpdate = false;
 
-              // Only lock on iOS when bars are hidden to prevent the "elastic" scroll back
               const shouldLock = !open && isIOS;
               document.documentElement.classList.toggle("is-locked", shouldLock);
 
               overlay.classList.toggle("is-visible", open);
-              spacer.classList.toggle("is-visible", open);
+              
+              if (open) {
+                verticalSpacer.style.visibility = "visible";
+                verticalSpacer.style.display = "block";
+              } else {
+                verticalSpacer.style.visibility = "hidden";
+                verticalSpacer.style.display = "none";
+              }
 
               Object.assign(container.style, {
                 position: open ? "sticky" : "fixed",
