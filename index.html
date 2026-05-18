@@ -89,8 +89,11 @@
 
     .fullscreen-game {
       border-style: none;
+      position: fixed;
+      inset: 0;
       width: 100vw;
       height: 100dvh;
+      z-index: 10;
       transition: opacity 0.3s ease;
     }
 
@@ -377,6 +380,15 @@
             window.visualViewport.addEventListener("resize", measure, { passive: true });
             window.visualViewport.addEventListener("scroll", measure, { passive: true });
           }
+        } else {
+          // Explicitly set fixed for Android to ensure layering
+          Object.assign(container.style, {
+            position: "fixed",
+            inset: "0",
+            height: "100dvh",
+            width: "100vw",
+            zIndex: "10"
+          });
         }
       } else {
         canvas.style.width = "1280px";
