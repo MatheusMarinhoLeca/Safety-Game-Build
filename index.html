@@ -2,584 +2,685 @@
 <html lang="en-us">
 
 
+
+
 <head>
- <meta charset="utf-8">
- <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
- <title>Unity WebGL Player | Safety Simulator</title>
- <link rel="shortcut icon" href="TemplateData/favicon.ico">
- <link rel="stylesheet" href="TemplateData/style.css">
- <style>
-   :root {
-     color-scheme: light dark;
-     --isl-vh: 1%;
-   }
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+<title>Unity WebGL Player | Safety Simulator</title>
+<link rel="shortcut icon" href="TemplateData/favicon.ico">
+<link rel="stylesheet" href="TemplateData/style.css">
+<style>
+  :root {
+    color-scheme: light dark;
+    --isl-vh: 1%;
+  }
 
 
-   * {
-     box-sizing: border-box;
-   }
 
 
-   #unity-container {
-     overflow: hidden;
-   }
+  * {
+    box-sizing: border-box;
+  }
 
 
-   html,
-   body {
-     margin: 0;
-     padding: 0;
-     min-height: 100%;
-     font-family: system-ui, sans-serif;
-     background: canvas;
-     color: canvastext;
-   }
 
 
-   html.is-locked,
-   html.is-locked body {
-     overflow: hidden;
-     position: relative;
-     width: 100vw;
-     height: 100dvh;
-     overscroll-behavior: none;
-   }
+  #unity-container {
+    overflow: hidden;
+  }
 
 
-   .holder {
-     position: fixed;
-     left: 0;
-     top: 0;
-     width: 100%;
-     height: min(calc(var(--isl-vh) * 100), 100%);
-     overflow: hidden;
-     z-index: 2147483646;
-     display: none;
-   }
 
 
-   html.is-locked .holder {
-     display: block;
-   }
+  html,
+  body {
+    margin: 0;
+    padding: 0;
+    min-height: 100%;
+    font-family: system-ui, sans-serif;
+    background: canvas;
+    color: canvastext;
+  }
 
 
-   .scroller {
-     display: block;
-     width: 100%;
-     height: 100%;
-     overflow-x: hidden;
-     overflow-y: auto;
-     overscroll-behavior: none;
-     scrollbar-width: none;
-     -webkit-overflow-scrolling: touch;
-   }
 
 
-   .scroller-inner {
-     display: flex;
-     justify-content: flex-start;
-     align-items: stretch;
-     flex-direction: column;
-     height: calc(100% + 1px);
-     min-height: calc(100% + 1px);
-   }
+  html.is-locked,
+  html.is-locked body {
+    overflow: hidden;
+    position: relative;
+    width: 100vw;
+    height: 100dvh;
+    overscroll-behavior: none;
+  }
 
 
-   .content {
-     display: flex;
-     justify-content: flex-start;
-     align-items: stretch;
-     flex-direction: column;
-     position: sticky;
-     width: 100%;
-     height: calc(100% - 1px);
-     top: 0;
-     bottom: 0;
-   }
 
 
-   .fullscreen-game {
-     border-style: none;
-     position: fixed;
-     inset: 0;
-     width: 100vw;
-     height: 100dvh;
-     z-index: 10;
-     transition: opacity 0.3s ease;
-   }
+  .holder {
+    position: fixed;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: min(calc(var(--isl-vh) * 100), 100%);
+    overflow: hidden;
+    z-index: 2147483646;
+    display: none;
+  }
 
 
-   .preloader-overlay {
-     position: fixed;
-     inset: 0;
-     background: #1a1a1a;
-     display: none;
-     flex-direction: column;
-     align-items: center;
-     justify-content: center;
-     z-index: 3000;
-     color: white;
-     text-align: center;
-     padding: 20px;
-     transition: opacity 0.5s ease, visibility 0.5s;
-   }
 
 
-   .preloader-overlay.is-hidden {
-     opacity: 0;
-     visibility: hidden;
-     pointer-events: none;
-   }
+  html.is-locked .holder {
+    display: block;
+  }
 
 
-   .ready-button {
-     margin-top: 30px;
-     padding: 16px 48px;
-     font-size: 20px;
-     font-weight: bold;
-     color: white;
-     background: #4CAF50;
-     border: none;
-     border-radius: 50px;
-     cursor: pointer;
-     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
-     transition: transform 0.2s, background 0.2s;
-     -webkit-tap-highlight-color: transparent;
-   }
 
 
-   .ready-button:active {
-     transform: scale(0.95);
-     background: #45a049;
-   }
+  .scroller {
+    display: block;
+    width: 100%;
+    height: 100%;
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior: none;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+  }
 
 
-   .preloader-message {
-     max-width: 300px;
-     line-height: 1.5;
-     font-size: 16px;
-   }
 
 
-   .overlay {
-     position: fixed;
-     inset: 0;
-     display: none;
-     align-items: flex-start;
-     justify-content: center;
-     padding: 12px env(safe-area-inset-right) 0 env(safe-area-inset-left);
-     z-index: 2147483647;
-     pointer-events: none;
-   }
+  .scroller-inner {
+    display: flex;
+    justify-content: flex-start;
+    align-items: stretch;
+    flex-direction: column;
+    height: calc(100% + 1px);
+    min-height: calc(100% + 1px);
+  }
 
 
-   .overlay-rotation {
-     position: fixed;
-     inset: 0;
-     display: none;
-     align-items: center;
-     justify-content: center;
-     padding: 24px;
-     z-index: 2147483648;
-     background: rgba(0, 0, 0, 0.7);
-     backdrop-filter: blur(8px);
-     pointer-events: auto;
-   }
 
 
-   .overlay-rotation.is-visible {
-     display: flex;
-   }
+  .content {
+    display: flex;
+    justify-content: flex-start;
+    align-items: stretch;
+    flex-direction: column;
+    position: sticky;
+    width: 100%;
+    height: calc(100% - 1px);
+    top: 0;
+    bottom: 0;
+  }
 
 
-   .bubble {
-     max-width: 80vw;
-     backdrop-filter: blur(8px);
-     background: rgba(0, 0, 0, 0.5);
-     color: #fff;
-     border-radius: 96px;
-     padding: 12px 24px;
-     font-size: 14px;
-     pointer-events: auto;
-     text-align: center;
-   }
 
 
-   .spacer {
-     display: block;
-     width: 1px;
-     height: 0;
-     pointer-events: none;
-     visibility: hidden;
-     z-index: -1;
-   }
+  .fullscreen-game {
+    border-style: none;
+    position: fixed;
+    inset: 0;
+    width: 100vw;
+    height: 100dvh;
+    z-index: 10;
+    transition: opacity 0.3s ease;
+  }
 
 
-   .spacer.is-visible {
-     height: 2000vh;
-     pointer-events: auto;
-     visibility: visible;
-     z-index: 5;
-   }
- </style>
- <script>
-   window.unityBackendUrl = "https://safety-game-backend-jrkle.ondigitalocean.app";
- </script>
+
+
+  .preloader-overlay {
+    position: fixed;
+    inset: 0;
+    background: #1a1a1a;
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 3000;
+    color: white;
+    text-align: center;
+    padding: 20px;
+    transition: opacity 0.5s ease, visibility 0.5s;
+  }
+
+
+
+
+  .preloader-overlay.is-hidden {
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+  }
+
+
+
+
+  .ready-button {
+    margin-top: 30px;
+    padding: 16px 48px;
+    font-size: 20px;
+    font-weight: bold;
+    color: white;
+    background: #4CAF50;
+    border: none;
+    border-radius: 50px;
+    cursor: pointer;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+    transition: transform 0.2s, background 0.2s;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+
+
+
+  .ready-button:active {
+    transform: scale(0.95);
+    background: #45a049;
+  }
+
+
+
+
+  .preloader-message {
+    max-width: 300px;
+    line-height: 1.5;
+    font-size: 16px;
+  }
+
+
+
+
+  .overlay {
+    position: fixed;
+    inset: 0;
+    display: none;
+    align-items: flex-start;
+    justify-content: center;
+    padding: 12px env(safe-area-inset-right) 0 env(safe-area-inset-left);
+    z-index: 2147483647;
+    pointer-events: none;
+  }
+
+
+
+
+  .overlay-rotation {
+    position: fixed;
+    inset: 0;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    z-index: 2147483648;
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(8px);
+    pointer-events: auto;
+  }
+
+
+
+
+  .overlay-rotation.is-visible {
+    display: flex;
+  }
+
+
+
+
+  .bubble {
+    max-width: 80vw;
+    backdrop-filter: blur(8px);
+    background: rgba(0, 0, 0, 0.5);
+    color: #fff;
+    border-radius: 96px;
+    padding: 12px 24px;
+    font-size: 14px;
+    pointer-events: auto;
+    text-align: center;
+  }
+
+
+
+
+  .spacer {
+    display: block;
+    width: 1px;
+    height: 0;
+    pointer-events: none;
+    visibility: hidden;
+    z-index: -1;
+  }
+
+
+
+
+  .spacer.is-visible {
+    height: 2000vh;
+    pointer-events: auto;
+    visibility: visible;
+    z-index: 5;
+  }
+</style>
+<script>
+  window.unityBackendUrl = "https://safety-game-backend-jrkle.ondigitalocean.app";
+</script>
 </head>
 
 
+
+
 <body>
- <div class="preloader-overlay">
-   <div id="preloader-logo"></div>
-   <div class="preloader-message">
-     <h2>Welcome</h2>
-     <p>Scroll down a bit to hide the browser bars and enjoy the full screen experience.</p>
-   </div>
-   <button class="ready-button" onclick="onReadyClicked()">READY</button>
- </div>
+<div class="preloader-overlay">
+  <div id="preloader-logo"></div>
+  <div class="preloader-message">
+    <h2>Welcome</h2>
+    <p>Scroll down a bit to hide the browser bars and enjoy the full screen experience.</p>
+  </div>
+  <button class="ready-button" onclick="onReadyClicked()">READY</button>
+</div>
 
 
- <div id="unity-container" class="unity-desktop">
-   <canvas id="unity-canvas" width=1280 height=720 tabindex="-1"></canvas>
-   <div id="unity-loading-bar">
-     <div id="unity-logo"></div>
-     <div id="unity-progress-bar-empty">
-       <div id="unity-progress-bar-full"></div>
-     </div>
-   </div>
-   <div id="unity-warning"> </div>
-   <div id="unity-footer">
-     <div id="unity-webgl-logo"></div>
-     <div id="unity-fullscreen-button"></div>
-     <div id="unity-build-title">Safety Simulator</div>
-   </div>
- </div>
 
 
- <div class="overlay">
-   <div class="bubble">
-     Scroll down a bit to hide the browser bars and enjoy the full screen
-   </div>
- </div>
- <div class="overlay-rotation">
-   <div class="bubble">
-     Please rotate your device to landscape mode for the best experience
-   </div>
- </div>
+<div id="unity-container" class="unity-desktop">
+  <canvas id="unity-canvas" width=1280 height=720 tabindex="-1"></canvas>
+  <div id="unity-loading-bar">
+    <div id="unity-logo"></div>
+    <div id="unity-progress-bar-empty">
+      <div id="unity-progress-bar-full"></div>
+    </div>
+  </div>
+  <div id="unity-warning"> </div>
+  <div id="unity-footer">
+    <div id="unity-webgl-logo"></div>
+    <div id="unity-fullscreen-button"></div>
+    <div id="unity-build-title">Safety Simulator</div>
+  </div>
+</div>
 
 
- <div class="vertical-spacer" style="width: 1px; pointer-events: none; visibility: hidden; display: none;"></div>
 
 
- <script>
-   var container = document.querySelector("#unity-container");
-   var canvas = document.querySelector("#unity-canvas");
-   var loadingBar = document.querySelector("#unity-loading-bar");
-   var progressBarFull = document.querySelector("#unity-progress-bar-full");
-   var fullscreenButton = document.querySelector("#unity-fullscreen-button");
-   var warningBanner = document.querySelector("#unity-warning");
-    function unityShowBanner(msg, type) {
-     function updateBannerVisibility() {
-       warningBanner.style.display =
-         warningBanner.children.length ? "block" : "none";
-     }
-      var div = document.createElement("div");
-     div.innerHTML = msg;
-     warningBanner.appendChild(div);
-      if (type == "error") {
-       div.style = "background: red; padding: 10px; color: white;";
-     } else {
-       if (type == "warning") {
-         div.style = "background: yellow; padding: 10px;";
-       }
-        setTimeout(function () {
-         if (div.parentNode) warningBanner.removeChild(div);
-         updateBannerVisibility();
-       }, 5000);
-     }
-      updateBannerVisibility();
-   }
-    var buildUrl = "Build";
-    async function loadUnity() {
-     const parts = [
-       buildUrl + "/new version.data.part.unitywebaa",
-       buildUrl + "/new version.data.part.unitywebab"
-     ];
-      const responses = await Promise.all(parts.map((url) => fetch(url)));
-      for (var i = 0; i < responses.length; i++) {
-       if (!responses[i].ok) {
-         unityShowBanner("Failed to load data part: " + parts[i], "error");
-         return;
-       }
-     }
-      const buffers = await Promise.all(responses.map((r) => r.arrayBuffer()));
-      const totalLength = buffers.reduce((sum, b) => sum + b.byteLength, 0);
-     const merged = new Uint8Array(totalLength);
-      let offset = 0;
-     for (const buf of buffers) {
-       merged.set(new Uint8Array(buf), offset);
-       offset += buf.byteLength;
-     }
-      const dataBlob = new Blob([merged], { type: "application/octet-stream" });
-     const dataUrl = URL.createObjectURL(dataBlob);
-     window.unityDataUrl = dataUrl;
-      window.unityConfig = {
-       dataUrl: dataUrl,
-       frameworkUrl: buildUrl + "/new version.framework.js.unityweb",
-       codeUrl: buildUrl + "/new version.wasm.unityweb",
-       streamingAssetsUrl: "StreamingAssets",
-       companyName: "DefaultCompany",
-       productName: "Safety Simulator",
-       productVersion: "0.2",
-       showBanner: unityShowBanner
-     };
-      const isIOS =
-       /iPhone|iPad|iPod/.test(navigator.userAgent) ||
-       (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
-      const isAndroid = /Android/i.test(navigator.userAgent);
-     const isMobile = isIOS || isAndroid;
-      let safariActive = false;
-     let measureRef = null;
-      if (isMobile) {
-       // Show preloader only on mobile
-       document.querySelector(".preloader-overlay").style.display = 'flex';
+<div class="overlay">
+  <div class="bubble">
+    Scroll down a bit to hide the browser bars and enjoy the full screen
+  </div>
+</div>
+<div class="overlay-rotation">
+  <div class="bubble">
+    Please rotate your device to landscape mode for the best experience
+  </div>
+</div>
 
 
-       // --- ROTATION RECOVERY LOGIC ---
-       // Orientation changes often break minimal-ui mode. We detect the change
-       // and force a reload to let the browser re-stabilize the viewport.
-       const initialOrientation = window.innerHeight > window.innerWidth ? 'portrait' : 'landscape';
-      
-       const handleRotation = () => {
-         const currentOrientation = window.innerHeight > window.innerWidth ? 'portrait' : 'landscape';
-         if (currentOrientation !== initialOrientation) {
-           // Save state so we can skip the "Ready" screen after reload
-           sessionStorage.setItem('rotation_reload', 'true');
-           window.location.reload();
-         }
-       };
 
 
-       window.addEventListener("orientationchange", handleRotation);
-       // Backup for browsers that don't support orientationchange well
-       window.addEventListener("resize", () => {
-         // Only trigger if aspect ratio actually flipped
-         const currentOrientation = window.innerHeight > window.innerWidth ? 'portrait' : 'landscape';
-         if (currentOrientation !== initialOrientation) {
-            handleRotation();
-         }
-       }, { passive: true });
+<div class="vertical-spacer" style="width: 1px; pointer-events: none; visibility: hidden; display: none;"></div>
 
 
-       // Auto-start Unity if we just reloaded from a rotation
-       if (sessionStorage.getItem('rotation_reload') === 'true') {
-         sessionStorage.removeItem('rotation_reload');
-         window.userReady = true;
-         // We still wait for the loader script to be ready in script.onload
-       }
 
 
-       var meta = document.createElement("meta");
-       meta.name = "viewport";
-       meta.content =
-         "width=device-width, initial-scale=1.0, user-scalable=no, shrink-to-fit=yes, viewport-fit=cover";
-        document.getElementsByTagName("head")[0].appendChild(meta);
-        container.className = "unity-mobile fullscreen-game";
-       canvas.className = "unity-mobile";
-        canvas.style.width = "100%";
-       canvas.style.height = "100%";
+<script>
+  var container = document.querySelector("#unity-container");
+  var canvas = document.querySelector("#unity-canvas");
+  var loadingBar = document.querySelector("#unity-loading-bar");
+  var progressBarFull = document.querySelector("#unity-progress-bar-full");
+  var fullscreenButton = document.querySelector("#unity-fullscreen-button");
+  var warningBanner = document.querySelector("#unity-warning");
+   function unityShowBanner(msg, type) {
+    function updateBannerVisibility() {
+      warningBanner.style.display =
+        warningBanner.children.length ? "block" : "none";
+    }
+     var div = document.createElement("div");
+    div.innerHTML = msg;
+    warningBanner.appendChild(div);
+     if (type == "error") {
+      div.style = "background: red; padding: 10px; color: white;";
+    } else {
+      if (type == "warning") {
+        div.style = "background: yellow; padding: 10px;";
+      }
+       setTimeout(function () {
+        if (div.parentNode) warningBanner.removeChild(div);
+        updateBannerVisibility();
+      }, 5000);
+    }
+     updateBannerVisibility();
+  }
+   var buildUrl = "Build";
+   async function loadUnity() {
+    const parts = [
+      buildUrl + "/new version.data.part.unitywebaa",
+      buildUrl + "/new version.data.part.unitywebab"
+    ];
+     const responses = await Promise.all(parts.map((url) => fetch(url)));
+     for (var i = 0; i < responses.length; i++) {
+      if (!responses[i].ok) {
+        unityShowBanner("Failed to load data part: " + parts[i], "error");
+        return;
+      }
+    }
+     const buffers = await Promise.all(responses.map((r) => r.arrayBuffer()));
+     const totalLength = buffers.reduce((sum, b) => sum + b.byteLength, 0);
+    const merged = new Uint8Array(totalLength);
+     let offset = 0;
+    for (const buf of buffers) {
+      merged.set(new Uint8Array(buf), offset);
+      offset += buf.byteLength;
+    }
+     const dataBlob = new Blob([merged], { type: "application/octet-stream" });
+    const dataUrl = URL.createObjectURL(dataBlob);
+    window.unityDataUrl = dataUrl;
+     window.unityConfig = {
+      dataUrl: dataUrl,
+      frameworkUrl: buildUrl + "/new version.framework.js.unityweb",
+      codeUrl: buildUrl + "/new version.wasm.unityweb",
+      streamingAssetsUrl: "StreamingAssets",
+      companyName: "DefaultCompany",
+      productName: "Safety Simulator",
+      productVersion: "0.2",
+      showBanner: unityShowBanner
+    };
+     const isIOS =
+      /iPhone|iPad|iPod/.test(navigator.userAgent) ||
+      (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+     const isAndroid = /Android/i.test(navigator.userAgent);
+    const isMobile = isIOS || isAndroid;
+     let safariActive = false;
+    let measureRef = null;
+     if (isMobile) {
+      // Show preloader only on mobile
+      document.querySelector(".preloader-overlay").style.display = 'flex';
 
 
-       const rotationOverlay = document.querySelector(".overlay-rotation");
-       const overlay = document.querySelector(".overlay");
-       const spacer = document.querySelector(".spacer");
-      
-       const verticalSpacer = document.querySelector(".vertical-spacer");
-      
-       // --- SWIPE-TO-SCROLL BYPASS ---
-       // Unity captures all touch events. If browser bars are open, we temporarily
-       // disable game interaction during a vertical swipe so the browser can scroll.
-       container.addEventListener('touchstart', (e) => {
-         if (!tabsOpen) return;
-         const startY = e.touches[0].clientY;
-        
-         const onTouchMove = (moveEvent) => {
-           const currentY = moveEvent.touches[0].clientY;
-           // If user moves vertically more than 5px, disable game interaction
-           // so the touch gesture "falls through" to the background scroll.
-           if (Math.abs(currentY - startY) > 5) {
-             container.style.pointerEvents = 'none';
-             window.removeEventListener('touchmove', onTouchMove);
-           }
-         };
-        
-         const onTouchEnd = () => {
-           container.style.pointerEvents = 'auto';
-           window.removeEventListener('touchmove', onTouchMove);
-           window.removeEventListener('touchend', onTouchEnd);
-         };
 
 
-         window.addEventListener('touchmove', onTouchMove, { passive: true });
-         window.addEventListener('touchend', onTouchEnd, { passive: true });
-       }, { passive: true });
-
-
-       const checkOrientation = () => {
-         const isPortrait = window.innerHeight > window.innerWidth;
-         rotationOverlay.classList.toggle("is-visible", isPortrait);
-       };
-       window.addEventListener("resize", checkOrientation, { passive: true });
-       window.addEventListener("orientationchange", checkOrientation, { passive: true });
-       checkOrientation();
-
-
-       let tabsOpen = false;
-       let rafId = null;
-       let stabilizationTimer = null;
-
-
-       const nudge = () => {
-         if (window.scrollY === 0) window.scrollTo(0, 1);
-       };
-       nudge();
-       setTimeout(nudge, 100);
-       setTimeout(nudge, 500);
-
-
-       function measure() {
-         if (rafId !== null) cancelAnimationFrame(rafId);
-
-
-         rafId = requestAnimationFrame(() => {
-           const viewport = window.visualViewport;
-           if (!viewport) return;
-
-
-           // Use the document's clientHeight as the "target" height for a full viewport.
-           // On mobile, clientHeight reflects the height without the browser bars (minimal UI).
-           const isPortrait = window.innerHeight > window.innerWidth;
-           const screenShort = Math.min(window.screen.width, window.screen.height);
-           const screenLong = Math.max(window.screen.width, window.screen.height);
-           const targetHeight = isPortrait ? screenLong : screenShort;
-          
-           // Detection threshold: If viewport is significantly smaller than screen height, tabs are open.
-           const threshold = 60;
-           const open = (viewport.height + viewport.offsetTop) < (targetHeight - threshold);
-
-
-           if (open === tabsOpen && !window.forceUpdate) return;
-          
-           if (stabilizationTimer) clearTimeout(stabilizationTimer);
-
-
-           const updateLayout = () => {
-             tabsOpen = open;
-             window.forceUpdate = false;
-
-
-             const shouldLock = !open && isIOS;
-             document.documentElement.classList.toggle("is-locked", shouldLock);
-
-
-             overlay.classList.toggle("is-visible", open);
-            
-             if (open) {
-               verticalSpacer.style.display = "block";
-               verticalSpacer.style.height = "110dvh";
-             } else {
-               verticalSpacer.style.display = "none";
-               verticalSpacer.style.height = "0px";
-             }
-
-
-             Object.assign(container.style, {
-               position: open ? "sticky" : "fixed",
-               top: "0",
-               left: "0",
-               height: "100dvh",
-               width: "100vw",
-               pointerEvents: "auto",
-               zIndex: "20"
-             });
-           };
-
-
-           if (!open) {
-             stabilizationTimer = setTimeout(updateLayout, 300);
-           } else {
-             updateLayout();
-           }
-         });
-       }
-
-
-       measureRef = measure;
-       measure();
-
-
-       window.addEventListener("resize", measure, { passive: true });
-       window.addEventListener("orientationchange", measure, { passive: true });
-       window.addEventListener("scroll", measure, { passive: true });
-
-
-       if (window.visualViewport) {
-         window.visualViewport.addEventListener("resize", measure, { passive: true });
-         window.visualViewport.addEventListener("scroll", measure, { passive: true });
-       }
-     } else {
-       canvas.style.width = "1280px";
-       canvas.style.height = "720px";
-       window.userReady = true;
-     }
-      loadingBar.style.display = "block";
-      var script = document.createElement("script");
-     script.src = buildUrl + "/new version.loader.js";
-      script.onload = () => {
-       window.unityLoaderReady = true;
-       // Check if user already clicked ready while loader was fetching
-       if (window.userReady) startUnity();
-     };
-      document.body.appendChild(script);
-   }
-  
-   function startUnity() {
-     if (window.unityInstanceStarted) return;
-     window.unityInstanceStarted = true;
-
-
-     document.querySelector(".preloader-overlay").classList.add("is-hidden");
+      // --- ROTATION RECOVERY LOGIC ---
+      // Orientation changes often break minimal-ui mode. We detect the change
+      // and force a reload to let the browser re-stabilize the viewport.
+      const initialOrientation = window.innerHeight > window.innerWidth ? 'portrait' : 'landscape';
     
-     const canvas = document.querySelector("#unity-canvas");
-     // Use the config defined in loadUnity (which we'll need to make accessible)
-     createUnityInstance(canvas, window.unityConfig, (progress) => {
-       document.querySelector("#unity-progress-bar-full").style.width = 100 * progress + "%";
-     })
-       .then((unityInstance) => {
-         document.querySelector("#unity-loading-bar").style.display = "none";
-         URL.revokeObjectURL(window.unityDataUrl);
+      const handleRotation = () => {
+        const currentOrientation = window.innerHeight > window.innerWidth ? 'portrait' : 'landscape';
+        if (currentOrientation !== initialOrientation) {
+          // Save state so we can skip the "Ready" screen after reload
+          sessionStorage.setItem('rotation_reload', 'true');
+          window.location.reload();
+        }
+      };
 
 
-         document.querySelector("#unity-fullscreen-button").onclick = () => {
-           unityInstance.SetFullscreen(1);
-         };
-       })
-       .catch((message) => {
-         alert(message);
-       });
-   }
 
 
-   function onReadyClicked() {
-     window.userReady = true;
-     if (window.unityLoaderReady) {
-       startUnity();
-     } else {
-       // Show a "Loading..." state on the button if script isn't ready
-       document.querySelector(".ready-button").innerText = "LOADING...";
-     }
-   }
-    loadUnity();
- </script>
+      window.addEventListener("orientationchange", handleRotation);
+      // Backup for browsers that don't support orientationchange well
+      window.addEventListener("resize", () => {
+        // Only trigger if aspect ratio actually flipped
+        const currentOrientation = window.innerHeight > window.innerWidth ? 'portrait' : 'landscape';
+        if (currentOrientation !== initialOrientation) {
+           handleRotation();
+        }
+      }, { passive: true });
+
+
+
+
+      // Auto-start Unity if we just reloaded from a rotation
+      if (sessionStorage.getItem('rotation_reload') === 'true') {
+        sessionStorage.removeItem('rotation_reload');
+        window.userReady = true;
+        // We still wait for the loader script to be ready in script.onload
+      }
+
+
+
+
+      var meta = document.createElement("meta");
+      meta.name = "viewport";
+      meta.content =
+        "width=device-width, initial-scale=1.0, user-scalable=no, shrink-to-fit=yes, viewport-fit=cover";
+       document.getElementsByTagName("head")[0].appendChild(meta);
+       container.className = "unity-mobile fullscreen-game";
+      canvas.className = "unity-mobile";
+       canvas.style.width = "100%";
+      canvas.style.height = "100%";
+
+
+
+
+      const rotationOverlay = document.querySelector(".overlay-rotation");
+      const overlay = document.querySelector(".overlay");
+      const spacer = document.querySelector(".spacer");
+    
+      const verticalSpacer = document.querySelector(".vertical-spacer");
+    
+      // --- SWIPE-TO-SCROLL BYPASS ---
+      // Unity captures all touch events. If browser bars are open, we temporarily
+      // disable game interaction during a vertical swipe so the browser can scroll.
+      container.addEventListener('touchstart', (e) => {
+        if (!tabsOpen) return;
+        const startY = e.touches[0].clientY;
+      
+        const onTouchMove = (moveEvent) => {
+          const currentY = moveEvent.touches[0].clientY;
+          // If user moves vertically more than 5px, disable game interaction
+          // so the touch gesture "falls through" to the background scroll.
+          if (Math.abs(currentY - startY) > 5) {
+            container.style.pointerEvents = 'none';
+            window.removeEventListener('touchmove', onTouchMove);
+          }
+        };
+      
+        const onTouchEnd = () => {
+          container.style.pointerEvents = 'auto';
+          window.removeEventListener('touchmove', onTouchMove);
+          window.removeEventListener('touchend', onTouchEnd);
+        };
+
+
+
+
+        window.addEventListener('touchmove', onTouchMove, { passive: true });
+        window.addEventListener('touchend', onTouchEnd, { passive: true });
+      }, { passive: true });
+
+
+
+
+      const checkOrientation = () => {
+        const isPortrait = window.innerHeight > window.innerWidth;
+        rotationOverlay.classList.toggle("is-visible", isPortrait);
+      };
+      window.addEventListener("resize", checkOrientation, { passive: true });
+      window.addEventListener("orientationchange", checkOrientation, { passive: true });
+      checkOrientation();
+
+
+
+
+      let tabsOpen = false;
+      let rafId = null;
+      let stabilizationTimer = null;
+
+
+
+
+      const nudge = () => {
+        if (window.scrollY === 0) window.scrollTo(0, 1);
+      };
+      nudge();
+      setTimeout(nudge, 100);
+      setTimeout(nudge, 500);
+
+
+
+
+      function measure() {
+        if (rafId !== null) cancelAnimationFrame(rafId);
+
+
+
+
+        rafId = requestAnimationFrame(() => {
+          const viewport = window.visualViewport;
+          if (!viewport) return;
+
+
+
+
+          // Use the document's clientHeight as the "target" height for a full viewport.
+          // On mobile, clientHeight reflects the height without the browser bars (minimal UI).
+          const isPortrait = window.innerHeight > window.innerWidth;
+          const screenShort = Math.min(window.screen.width, window.screen.height);
+          const screenLong = Math.max(window.screen.width, window.screen.height);
+          const targetHeight = isPortrait ? screenLong : screenShort;
+        
+          // Detection threshold: If viewport is significantly smaller than screen height, tabs are open.
+          const threshold = 60;
+          const open = (viewport.height + viewport.offsetTop) < (targetHeight - threshold);
+
+
+
+
+          if (open === tabsOpen && !window.forceUpdate) return;
+        
+          if (stabilizationTimer) clearTimeout(stabilizationTimer);
+
+
+
+
+          const updateLayout = () => {
+            tabsOpen = open;
+            window.forceUpdate = false;
+
+
+
+
+            const shouldLock = !open && isIOS;
+            document.documentElement.classList.toggle("is-locked", shouldLock);
+
+
+
+
+            overlay.classList.toggle("is-visible", open);
+          
+            if (open) {
+              verticalSpacer.style.display = "block";
+              verticalSpacer.style.height = "110dvh";
+            } else {
+              verticalSpacer.style.display = "none";
+              verticalSpacer.style.height = "0px";
+            }
+
+
+
+
+            Object.assign(container.style, {
+              position: open ? "sticky" : "fixed",
+              top: "0",
+              left: "0",
+              height: "100dvh",
+              width: "100vw",
+              pointerEvents: "auto",
+              zIndex: "20"
+            });
+          };
+
+
+
+
+          if (!open) {
+            stabilizationTimer = setTimeout(updateLayout, 300);
+          } else {
+            updateLayout();
+          }
+        });
+      }
+
+
+
+
+      measureRef = measure;
+      measure();
+
+
+
+
+      window.addEventListener("resize", measure, { passive: true });
+      window.addEventListener("orientationchange", measure, { passive: true });
+      window.addEventListener("scroll", measure, { passive: true });
+
+
+
+
+      if (window.visualViewport) {
+        window.visualViewport.addEventListener("resize", measure, { passive: true });
+        window.visualViewport.addEventListener("scroll", measure, { passive: true });
+      }
+    } else {
+      canvas.style.width = "1280px";
+      canvas.style.height = "720px";
+      window.userReady = true;
+    }
+     loadingBar.style.display = "block";
+     var script = document.createElement("script");
+    script.src = buildUrl + "/new version.loader.js";
+     script.onload = () => {
+      window.unityLoaderReady = true;
+      // Check if user already clicked ready while loader was fetching
+      if (window.userReady) startUnity();
+    };
+     document.body.appendChild(script);
+  }
+   function startUnity() {
+    if (window.unityInstanceStarted) return;
+    window.unityInstanceStarted = true;
+
+
+
+
+    document.querySelector(".preloader-overlay").classList.add("is-hidden");
+  
+    const canvas = document.querySelector("#unity-canvas");
+    // Use the config defined in loadUnity (which we'll need to make accessible)
+    createUnityInstance(canvas, window.unityConfig, (progress) => {
+      document.querySelector("#unity-progress-bar-full").style.width = 100 * progress + "%";
+    })
+      .then((unityInstance) => {
+        document.querySelector("#unity-loading-bar").style.display = "none";
+        URL.revokeObjectURL(window.unityDataUrl);
+
+
+
+
+        document.querySelector("#unity-fullscreen-button").onclick = () => {
+          unityInstance.SetFullscreen(1);
+        };
+      })
+      .catch((message) => {
+        alert(message);
+      });
+  }
+
+
+
+
+  function onReadyClicked() {
+    window.userReady = true;
+    if (window.unityLoaderReady) {
+      startUnity();
+    } else {
+      // Show a "Loading..." state on the button if script isn't ready
+      document.querySelector(".ready-button").innerText = "LOADING...";
+    }
+  }
+   loadUnity();
+</script>
 </body>
 </html>
